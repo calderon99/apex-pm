@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apex</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  background: #0C0E12;
+  color: #E2E5EC;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:root {
+  --bg: #0C0E12;
+  --s1: #111318;
+  --s2: #181C22;
+  --s3: #1E2330;
+  --s4: #252D3D;
+  --line: rgba(255,255,255,0.07);
+  --line2: rgba(255,255,255,0.12);
+  --t1: #E2E5EC;
+  --t2: #7C8494;
+  --t3: #3E4555;
+  --green: #34C77B;
+  --amber: #E09B3A;
+  --red: #E05555;
+  --blue: #4C8EE8;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 4px; }
+
+/* ── TOP BAR ───────────────────── */
+.topbar {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.wordmark {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.wdot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.top-nav {
+  display: flex;
+  gap: 2px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+}
+.tnav {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t3);
+  padding: 4px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  transition: all 0.13s;
+}
+.tnav:hover { color: var(--t2); }
+.tnav.on { color: var(--t1); background: var(--s3); }
+.top-right { display: flex; align-items: center; gap: 8px; }
+.ai-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 4px 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.13s;
+}
+.ai-btn:hover { color: var(--t1); border-color: var(--line2); }
+.ai-btn.on { color: var(--blue); border-color: rgba(76,142,232,0.3); }
+.ai-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); animation: pulse 2.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+.avatar {
+  width: 27px; height: 27px; border-radius: 50%;
+  background: var(--s3);
+  border: 1px solid var(--line2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; color: var(--t2);
+  cursor: pointer;
+}
+
+/* ── SHELL ─────────────────────── */
+.shell { display: flex; flex: 1; overflow: hidden; }
+
+/* ── SIDEBAR ───────────────────── */
+.sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--s1);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 10px 8px;
+}
+.sb-section {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 10px 8px 5px;
+}
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--t2);
+  transition: all 0.1s;
+  user-select: none;
+}
+.sb-item:hover { background: var(--s2); color: var(--t1); }
+.sb-item.on { background: var(--s3); color: var(--t1); font-weight: 500; }
+.sb-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sb-badge {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--t3);
+  background: var(--s3);
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── MAIN ──────────────────────── */
+.main { flex: 1; display: flex; overflow: hidden; }
+
+/* ── VIEWS ─────────────────────── */
+.view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.view.on { display: flex; }
+
+/* ── PAGE HEADER ───────────────── */
+.ph {
+  padding: 16px 24px 12px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+.ph-left { min-width: 0; }
+.pt { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
+.pm { font-size: 11.5px; color: var(--t3); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.bc {
+  font-size: 10.5px;
+  color: var(--t3);
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.bc span { cursor: pointer; transition: color 0.1s; }
+.bc span:hover { color: var(--t2); }
+.ph-actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+
+/* ── TOOLBAR ───────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  background: var(--s1);
+}
+.tabs { display: flex; }
+.tab {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--t3);
+  padding: 4px 13px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  border-bottom: 1.5px solid transparent;
+  transition: all 0.12s;
+}
+.tab:hover { color: var(--t2); }
+.tab.on { color: var(--t1); border-bottom-color: var(--blue); }
+.tb-sep { width: 1px; height: 14px; background: var(--line); margin: 0 3px; }
+
+/* ── BUTTONS ───────────────────── */
+.btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  border-radius: 7px;
+  padding: 5px 12px;
+  transition: all 0.12s;
+}
+.btn-ghost { background: none; color: var(--t2); border: 1px solid var(--line); }
+.btn-ghost:hover { color: var(--t1); border-color: var(--line2); }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { opacity: 0.9; }
+.sel {
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--t2);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+  outline: none;
+}
+.sel:hover { color: var(--t1); }
+.inp {
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--t1);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  outline: none;
+  width: 160px;
+}
+.inp::placeholder { color: var(--t3); }
+.inp:focus { border-color: var(--line2); }
+
+/* ── SCROLL ────────────────────── */
+.scroll { flex: 1; overflow-y: auto; }
+.pad { padding: 20px 24px 28px; }
+
+/* ── STAT ROW ──────────────────── */
+.stats { display: grid; gap: 9px; margin-bottom: 18px; }
+.s2 { grid-template-columns: 1fr 1fr; }
+.s3 { grid-template-columns: repeat(3, 1fr); }
+.s4 { grid-template-columns: repeat(4, 1fr); }
+.s5 { grid-template-columns: repeat(5, 1fr); }
+.sc {
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 14px;
+}
+.sv { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+.sv.g { color: var(--green); }
+.sv.a { color: var(--amber); }
+.sv.r { color: var(--red); }
+.sv.b { color: var(--blue); }
+.sl { font-size: 9.5px; font-weight: 600; color: var(--t3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+
+/* ── TABLE ─────────────────────── */
+.tbl-wrap { background: var(--s1); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tbl thead tr { border-bottom: 1px solid var(--line); }
+.tbl th { padding: 9px 14px; text-align: left; font-size: 10px; font-weight: 700; color: var(--t3); letter-spacing: 0.1em; text-transform: uppercase; background: var(--s1); white-space: nowrap; position: sticky; top: 0; }
+.tbl td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; color: var(--t2); }
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl tbody tr.cl { cursor: pointer; transition: background 0.1s; }
+.tbl tbody tr.cl:hover td { background: var(--s2); }
+.cp { color: var(--t1); font-weight: 500; font-size: 13px; }
+.cm { color: var(--t3); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+/* ── CHIPS ─────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.chip.g { background: rgba(52,199,123,0.11); color: var(--green); }
+.chip.a { background: rgba(224,155,58,0.11); color: var(--amber); }
+.chip.r { background: rgba(224,85,85,0.11); color: var(--red); }
+.chip.b { background: rgba(76,142,232,0.11); color: var(--blue); }
+.chip.m { background: var(--s3); color: var(--t2); }
+
+/* ── PROGRESS ──────────────────── */
+.prog { width: 100%; height: 3px; background: var(--s4); border-radius: 2px; overflow: hidden; }
+.pf { height: 100%; border-radius: 2px; }
+.pfg { background: var(--green); }
+.pfa { background: var(--amber); }
+.pfb { background: var(--blue); }
+.ibar { display: flex; align-items: center; gap: 8px; }
+.ibar .tr { flex: 1; height: 3px; background: var(--s4); border-radius: 2px; overflow: hidden; min-width: 50px; }
+.ibar .pct { font-size: 10.5px; color: var(--t3); width: 28px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── ASSIGNEE ──────────────────── */
+.aw { display: flex; align-items: center; gap: 6px; }
+.ap { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 600; flex-shrink: 0; }
+
+/* ── GROUP / ROLLUP ROWS ───────── */
+.gr td { background: var(--s1) !important; }
+.gl { font-size: 10.5px; font-weight: 700; color: var(--t3); letter-spacing: 0.08em; text-transform: uppercase; }
+.rup td { background: rgba(76,142,232,0.02) !important; font-size: 10.5px; color: var(--t3); font-style: italic; }
+
+/* ── STAGE GATE ────────────────── */
+.stages {
+  display: flex;
+  margin: 0 24px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.stage {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--s2);
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+.stage:last-child { border-right: none; }
+.stage.done { background: rgba(52,199,123,0.06); }
+.stage.curr { background: rgba(76,142,232,0.08); }
+.stage.ahead { background: var(--s1); }
+.stage-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+.stage.done .stage-lbl { color: var(--green); }
+.stage.curr .stage-lbl { color: var(--blue); }
+.stage.ahead .stage-lbl { color: var(--t3); }
+.stage-name { font-size: 11.5px; font-weight: 500; }
+.stage.done .stage-name { color: var(--t2); }
+.stage.curr .stage-name { color: var(--t1); }
+.stage.ahead .stage-name { color: var(--t3); }
+.stage-bar { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--green); }
+.stage.curr .stage-bar { background: var(--blue); }
+
+/* ── DETAIL STATS ──────────────── */
+.dstats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.ds { background: var(--s1); padding: 13px 10px; text-align: center; }
+.dsv { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
+.dsl { font-size: 9px; font-weight: 700; color: var(--t3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 3px; }
+
+/* ── TASK ROWS ─────────────────── */
+.trow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.trow:last-child { border-bottom: none; }
+.trow:hover { background: var(--s2); }
+.tck {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--t3);
+  flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px;
+}
+.tck.dn { background: var(--green); border-color: var(--green); color: #fff; }
+.tck.bk { border-color: var(--red); color: var(--red); }
+.tck.ip { border-color: var(--blue); color: var(--blue); }
+.tbody2 { flex: 1; min-width: 0; }
+.tn { font-size: 13.5px; font-weight: 500; color: var(--t1); }
+.tn.dn { color: var(--t3); text-decoration: line-through; }
+.tmeta { font-size: 11px; color: var(--t2); margin-top: 2px; font-weight: 300; }
+.dlbl { font-size: 10px; font-weight: 700; color: var(--t3); letter-spacing: 0.1em; text-transform: uppercase; padding: 10px 24px 5px; }
+.rollup { background: var(--s2); border-radius: 8px; padding: 7px 11px; margin: 4px 24px 10px; font-size: 10.5px; color: var(--t3); }
+
+/* ── SPREADSHEET ───────────────── */
+.sw { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.stb {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-bottom: 1px solid var(--line);
+  background: var(--s1); overflow-x: auto; flex-shrink: 0;
+}
+.stb::-webkit-scrollbar { display: none; }
+.tbb {
+  font-size: 12px; font-weight: 500; font-family: inherit;
+  color: var(--t2); background: var(--s2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 5px 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+.tbb:hover { color: var(--t1); }
+.tbb.hi { background: var(--blue); color: #fff; border-color: var(--blue); }
+.tsep { width: 1px; height: 16px; background: var(--line); flex-shrink: 0; margin: 0 2px; }
+.go { flex: 1; overflow: auto; }
+.go::-webkit-scrollbar { width: 5px; height: 5px; }
+.go::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 5px; }
+.gtbl { border-collapse: collapse; min-width: 100%; font-size: 12.5px; }
+.gtbl th { position: sticky; top: 0; z-index: 5; background: var(--s1); border-bottom: 1px solid var(--line2); border-right: 1px solid var(--line); padding: 8px 9px; font-size: 9.5px; font-weight: 700; color: var(--t2); letter-spacing: 0.08em; text-transform: uppercase; text-align: left; white-space: nowrap; cursor: pointer; user-select: none; }
+.gtbl th:hover { color: var(--t1); }
+.gtbl th.rn { width: 30px; text-align: center; cursor: default; }
+.gtbl td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 0; vertical-align: middle; }
+.gtbl td.rn { text-align: center; font-size: 10px; color: var(--t3); background: var(--s1); padding: 0 4px; width: 30px; cursor: pointer; border-right: 1px solid var(--line2); }
+.gtbl td.rn:hover { background: var(--s2); }
+.gtbl tr:hover td:not(.rn) { background: rgba(255,255,255,0.012); }
+.gtbl tr.sel td { background: rgba(76,142,232,0.07) !important; }
+.gtbl tr.sel td.rn { background: rgba(76,142,232,0.14) !important; }
+.ci { width: 100%; height: 34px; background: transparent; border: none; outline: none; color: var(--t1); font-family: inherit; font-size: 12.5px; padding: 0 9px; }
+.ci:focus { background: rgba(76,142,232,0.08); box-shadow: inset 0 0 0 1.5px var(--blue); position: relative; z-index: 2; }
+.ci::placeholder { color: var(--t3); }
+.csel { width: 100%; height: 34px; background: transparent; border: none; outline: none; color: var(--t1); font-family: inherit; font-size: 12.5px; padding: 0 9px; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.csel:focus { background: rgba(76,142,232,0.08); box-shadow: inset 0 0 0 1.5px var(--blue); }
+.cnum { width: 100%; height: 34px; background: transparent; border: none; outline: none; color: var(--t1); font-family: monospace; font-size: 12px; padding: 0 9px; -moz-appearance: textfield; }
+.cnum::-webkit-outer-spin-button, .cnum::-webkit-inner-spin-button { -webkit-appearance: none; }
+.cdate { width: 100%; height: 34px; background: transparent; border: none; outline: none; color: var(--t2); font-family: monospace; font-size: 11.5px; padding: 0 9px; cursor: pointer; }
+.cdate:focus { background: rgba(76,142,232,0.08); box-shadow: inset 0 0 0 1.5px var(--blue); color: var(--t1); }
+.add-row-btn { display: flex; align-items: center; gap: 7px; padding: 9px 14px; font-size: 13px; color: var(--t3); cursor: pointer; border-top: 1px solid var(--line); background: var(--s1); flex-shrink: 0; }
+.add-row-btn:hover { color: var(--t1); }
+
+/* ── IMPORT ────────────────────── */
+.drop-z { border: 1.5px dashed var(--line2); border-radius: 12px; padding: 28px 20px; text-align: center; background: var(--s1); margin-bottom: 14px; }
+.drop-z.over { border-color: var(--blue); background: rgba(76,142,232,0.04); }
+.browse-lbl { display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; background: var(--s2); border: 1px solid var(--line2); border-radius: 20px; padding: 7px 16px; font-size: 13px; color: var(--t1); cursor: pointer; }
+.browse-lbl:hover { background: var(--s3); }
+
+/* ── AI PANEL ──────────────────── */
+.ai-panel {
+  width: 300px;
+  flex-shrink: 0;
+  background: var(--s1);
+  border-left: 1px solid var(--line);
+  display: none;
+  flex-direction: column;
+}
+.ai-panel.on { display: flex; }
+.ai-head { padding: 13px 15px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.ai-orb { width: 26px; height: 26px; border-radius: 50%; background: var(--s3); border: 1px solid rgba(76,142,232,0.25); display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.ai-msgs { flex: 1; overflow-y: auto; padding: 13px; display: flex; flex-direction: column; gap: 10px; }
+.m-apex { max-width: 90%; font-size: 12.5px; line-height: 1.65; color: var(--t1); font-weight: 300; }
+.m-apex .who { font-size: 9px; color: var(--blue); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.m-user { align-self: flex-end; max-width: 85%; background: var(--s2); border: 1px solid var(--line2); border-radius: 12px 12px 4px 12px; padding: 8px 12px; font-size: 12.5px; color: var(--t1); font-weight: 300; line-height: 1.5; }
+.ai-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 13px 8px; }
+.ai-chip { background: var(--s2); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px; font-size: 10.5px; color: var(--t2); cursor: pointer; white-space: nowrap; }
+.ai-chip:hover { color: var(--t1); border-color: var(--line2); }
+.ai-input-row { display: flex; gap: 8px; padding: 10px 13px 12px; border-top: 1px solid var(--line); flex-shrink: 0; background: var(--s1); }
+.ai-input { flex: 1; background: var(--s2); border: 1px solid var(--line); border-radius: 20px; padding: 8px 13px; color: var(--t1); font-family: inherit; font-size: 13px; font-weight: 300; outline: none; }
+.ai-input::placeholder { color: var(--t3); }
+.ai-input:focus { border-color: rgba(76,142,232,0.3); }
+.ai-send { width: 33px; height: 33px; border-radius: 50%; background: var(--blue); border: none; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; flex-shrink: 0; }
+.ai-send:disabled { opacity: 0.3; }
+.think { display: flex; gap: 3px; padding: 3px 0; }
+.think span { width: 5px; height: 5px; border-radius: 50%; background: var(--t3); animation: bop 1.2s ease-in-out infinite; }
+.think span:nth-child(2) { animation-delay: 0.2s; }
+.think span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bop { 0%,80%,100%{transform:translateY(0);opacity:0.4} 40%{transform:translateY(-5px);opacity:1} }
+
+/* ── MODAL ─────────────────────── */
+.ov { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(6px); }
+.ov.on { display: flex; }
+.modal { background: var(--s1); border: 1px solid var(--line2); border-radius: 14px; width: 480px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
+.mh { padding: 16px 20px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+.mt { font-size: 15px; font-weight: 600; }
+.mc { background: none; border: none; color: var(--t3); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+.mc:hover { color: var(--t1); background: var(--s3); }
+.mb { padding: 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.mf { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 7px; }
+.fg { display: flex; flex-direction: column; gap: 5px; }
+.fl { font-size: 11px; font-weight: 600; color: var(--t2); }
+.fi, .fsl { background: var(--s2); border: 1px solid var(--line); color: var(--t1); font-family: inherit; font-size: 14px; padding: 9px 12px; border-radius: 10px; outline: none; }
+.fi::placeholder { color: var(--t3); }
+.fi:focus, .fsl:focus { border-color: var(--line2); }
+.fta { background: var(--s2); border: 1px solid var(--line); color: var(--t1); font-family: inherit; font-size: 13px; padding: 9px 12px; border-radius: 10px; outline: none; resize: vertical; min-height: 65px; }
+.fr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── TOAST ─────────────────────── */
+#toast { position: fixed; bottom: 22px; right: 22px; background: var(--s2); border: 1px solid var(--line2); border-radius: 10px; padding: 9px 15px; font-size: 12.5px; color: var(--t1); opacity: 0; transform: translateY(8px); transition: all 0.22s; z-index: 9999; pointer-events: none; max-width: 280px; }
+#toast.on { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="wordmark"><div class="wdot"></div>Apex</div>
+  <div class="top-nav">
+    <button class="tnav on"  onclick="nav('portfolio')">Portfolio</button>
+    <button class="tnav"     onclick="nav('projects')">Projects</button>
+    <button class="tnav"     onclick="nav('tasks')">Tasks</button>
+    <button class="tnav"     onclick="nav('resources')">Resources</button>
+  </div>
+  <div class="top-right">
+    <button class="ai-btn" id="ai-toggle" onclick="toggleAI()"><div class="ai-dot"></div>Apex AI</button>
+    <div class="avatar">AO</div>
+  </div>
+</div>
+
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sb"></div>
+
+<!-- MAIN VIEWS -->
+<div class="main">
+
+  <!-- PORTFOLIO -->
+  <div class="view on" id="v-portfolio">
+    <div class="ph">
+      <div class="ph-left">
+        <div class="pt">Portfolio</div>
+        <div class="pm" id="pf-pm">—</div>
+      </div>
+      <div class="ph-actions">
+        <select class="sel" id="pf-ini" onchange="renderPF()">
+          <option value="all">All Initiatives</option>
+          <option value="GTM Acceleration">GTM Acceleration</option>
+          <option value="Platform Modernization">Platform Modernization</option>
+          <option value="Ops Excellence">Ops Excellence</option>
+          <option value="Customer Experience">Customer Experience</option>
+        </select>
+        <select class="sel" id="pf-rgn" onchange="renderPF()">
+          <option value="all">All Regions</option>
+          <option value="na">North America</option>
+          <option value="emea">EMEA</option>
+          <option value="apac">APAC</option>
+        </select>
+        <button class="btn btn-ghost" onclick="openModal('m-proj')">+ Project</button>
+      </div>
+    </div>
+    <div class="scroll" id="pf-body"></div>
+  </div>
+
+  <!-- PROJECTS -->
+  <div class="view" id="v-projects">
+    <div class="ph">
+      <div class="ph-left">
+        <div class="pt">Projects</div>
+        <div class="pm" id="pj-pm">—</div>
+      </div>
+      <div class="ph-actions">
+        <input class="inp" placeholder="Search…" oninput="filterPJ(this.value)">
+        <select class="sel" id="pj-st" onchange="renderPJ()">
+          <option value="all">All Status</option>
+          <option value="On Track">On Track</option>
+          <option value="At Risk">At Risk</option>
+          <option value="Off Track">Off Track</option>
+        </select>
+        <button class="btn btn-ghost" onclick="openModal('m-proj')">+ Project</button>
+      </div>
+    </div>
+    <div class="scroll" id="pj-body"></div>
+  </div>
+
+  <!-- PROJECT DETAIL -->
+  <div class="view" id="v-pd">
+    <div class="ph">
+      <div class="ph-left">
+        <div class="bc"><span id="pd-bc-from" onclick="navBack()">Back</span> <span style="opacity:0.4">/</span> <span id="pd-bc-name" style="color:var(--t2)">—</span></div>
+        <div class="pt" id="pd-title">—</div>
+        <div class="pm" id="pd-meta">—</div>
+      </div>
+      <div class="ph-actions">
+        <span class="chip" id="pd-chip"></span>
+        <button class="btn btn-ghost" onclick="openModal('m-task')">+ Task</button>
+        <button class="btn btn-ghost" onclick="openModal('m-cf')">+ Field</button>
+      </div>
+    </div>
+    <div style="padding:12px 24px;flex-shrink:0"><div class="stages" id="pd-stages"></div></div>
+    <div class="dstats" id="pd-dstats"></div>
+    <div class="toolbar">
+      <div class="tabs">
+        <button class="tab on" onclick="pdTab('tasks',this)">Tasks</button>
+        <button class="tab" onclick="pdTab('sheet',this)">Spreadsheet</button>
+        <button class="tab" onclick="pdTab('info',this)">Info</button>
+      </div>
+      <div class="tb-sep"></div>
+      <button class="btn btn-ghost" onclick="openModal('m-task')" style="font-size:11px">+ Task</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('fi-input').click()" style="font-size:11px">↑ Import CSV</button>
+    </div>
+    <div id="pd-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0"></div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="view" id="v-tasks">
+    <div class="ph">
+      <div class="ph-left">
+        <div class="pt">Tasks</div>
+        <div class="pm" id="tk-pm">—</div>
+      </div>
+      <div class="ph-actions">
+        <input class="inp" placeholder="Search tasks…">
+        <select class="sel" id="tk-f" onchange="renderTK(this.value)">
+          <option value="all">All Tasks</option>
+          <option value="mine">My Tasks</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <button class="btn btn-ghost" onclick="openModal('m-task')">+ Task</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="tabs">
+        <button class="tab on" onclick="tkSeg('all',this)">All</button>
+        <button class="tab" onclick="tkSeg('mine',this)">Mine</button>
+        <button class="tab" onclick="tkSeg('blocked',this)">Blocked</button>
+      </div>
+      <div class="tb-sep"></div>
+      <select class="sel"><option>Group by Project</option><option>Group by Assignee</option><option>Group by Priority</option></select>
+    </div>
+    <div class="scroll" id="tk-body"></div>
+  </div>
+
+  <!-- RESOURCES -->
+  <div class="view" id="v-resources">
+    <div class="ph">
+      <div class="ph-left">
+        <div class="pt">Resources</div>
+        <div class="pm">Capacity and allocation across all projects</div>
+      </div>
+    </div>
+    <div class="scroll" id="rs-body"></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- AI PANEL -->
+<div class="ai-panel" id="ai-panel">
+  <div class="ai-head">
+    <div class="ai-orb">✦</div>
+    <div>
+      <div style="font-size:13px;font-weight:600">Apex AI</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:1px">claude · aware</div>
+    </div>
+    <button class="btn btn-ghost" style="margin-left:auto;padding:3px 8px;font-size:11px" onclick="toggleAI()">✕</button>
+  </div>
+  <div class="ai-msgs" id="ai-msgs">
+    <div class="m-apex"><div class="who">Apex AI</div>Hi Alejandro — I have full context on your portfolio. Ask me anything or tell me what to do.</div>
+  </div>
+  <div class="ai-chips">
+    <div class="ai-chip" onclick="qp('What\u2019s at risk this quarter?')">Risks?</div>
+    <div class="ai-chip" onclick="qp('Duplicate CRM Overhaul project')">Duplicate project</div>
+    <div class="ai-chip" onclick="qp('Portfolio status summary')">Status report</div>
+    <div class="ai-chip" onclick="qp('Create 5 tasks for Mobile App Launch')">Bulk tasks</div>
+  </div>
+  <div class="ai-input-row">
+    <input class="ai-input" id="ai-in" placeholder="Ask or command…" onkeydown="if(event.key==='Enter'){event.preventDefault();sendAI();}">
+    <button class="ai-send" id="ai-snd" onclick="sendAI()">↑</button>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<!-- MODALS -->
+<div class="ov" id="m-proj">
+  <div class="modal">
+    <div class="mh"><div class="mt">New Project</div><button class="mc" onclick="closeModal('m-proj')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Name</label><input class="fi" id="np-n" placeholder="Project name…"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Initiative</label><select class="fsl" id="np-i"><option>GTM Acceleration</option><option>Platform Modernization</option><option>Ops Excellence</option><option>Customer Experience</option></select></div>
+        <div class="fg"><label class="fl">Status</label><select class="fsl" id="np-s"><option>On Track</option><option>At Risk</option><option>Off Track</option><option>Planning</option></select></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Owner</label><input class="fi" id="np-o" placeholder="Name"></div>
+        <div class="fg"><label class="fl">Due Date</label><input type="date" class="fi" id="np-d"></div>
+      </div>
+      <div class="fg"><label class="fl">Description</label><textarea class="fta" id="np-desc" placeholder="Scope and objectives…"></textarea></div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-proj')">Cancel</button><button class="btn btn-primary" onclick="createProj()">Create</button></div>
+  </div>
+</div>
+
+<div class="ov" id="m-task">
+  <div class="modal">
+    <div class="mh"><div class="mt">Add Task</div><button class="mc" onclick="closeModal('m-task')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Task Name</label><input class="fi" id="nt-n" placeholder="What needs to be done?"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Project</label><select class="fsl" id="nt-p"></select></div>
+        <div class="fg"><label class="fl">Assignee</label><input class="fi" id="nt-a" placeholder="Name"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Status</label><select class="fsl" id="nt-s"><option>Not Started</option><option>In Progress</option><option>Blocked</option><option>Complete</option></select></div>
+        <div class="fg"><label class="fl">Priority</label><select class="fsl" id="nt-pr"><option>Medium</option><option>High</option><option>Critical</option><option>Low</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">Due Date</label><input type="date" class="fi" id="nt-d"></div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-task')">Cancel</button><button class="btn btn-primary" onclick="saveTask()">Add Task</button></div>
+  </div>
+</div>
+
+<div class="ov" id="m-cf">
+  <div class="modal" style="width:380px">
+    <div class="mh"><div class="mt">Add Custom Field</div><button class="mc" onclick="closeModal('m-cf')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Field Name</label><input class="fi" id="cf-n" placeholder="e.g. Effort Points, RAG, Region…"></div>
+      <div class="fg"><label class="fl">Type</label><select class="fsl" id="cf-t"><option>Text</option><option>Number</option><option>Dropdown</option><option>Date</option><option>Checkbox</option></select></div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-cf')">Cancel</button><button class="btn btn-primary" onclick="saveCF()">Add Field</button></div>
+  </div>
+</div>
+
+<input type="file" id="fi-input" accept=".csv,.xlsx,.xls,.tsv" style="display:none" onchange="handleFile(this)">
+<div id="toast"></div>
+
+<script>
+// ═══════════ DATA ═══════════════════════════
+const AC = ['#4C8EE8','#34C77B','#E09B3A','#6478C8','#E05555','#14b8a6'];
+const aC = n => AC[(n||'?').charCodeAt(0) % AC.length];
+const aI = n => (n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+const STAGES = ['Initiate','Plan','Execute','Review','Close'];
+const STATUSES = ['Not Started','In Progress','Blocked','Complete'];
+const PRIORITIES = ['Low','Medium','High','Critical'];
+
+let D = {
+  projects: [
+    {id:'crm',name:'CRM Overhaul',       ini:'GTM Acceleration',      rgn:'na',  st:'On Track', sg:3,owner:'Sarah K.',    due:'Jun 30',color:'#34C77B',desc:'Replace legacy CRM with AI enrichment.',tasks:[]},
+    {id:'dat',name:'Data Platform v2',   ini:'Platform Modernization', rgn:'na',  st:'On Track', sg:2,owner:'Alejandro O.',due:'Jul 15',color:'#4C8EE8',desc:'Rebuild pipeline on cloud-native arch.',tasks:[]},
+    {id:'mob',name:'Mobile App Launch',  ini:'Customer Experience',    rgn:'na',  st:'At Risk',  sg:1,owner:'James T.',   due:'May 31',color:'#E09B3A',desc:'Consumer iOS and Android app.',tasks:[]},
+    {id:'sec',name:'Security Audit',     ini:'Ops Excellence',         rgn:'emea',st:'Off Track', sg:0,owner:'Maria C.',   due:'Apr 30',color:'#E05555',desc:'SOC2 Type II and pen testing.',tasks:[]},
+    {id:'prt',name:'Partner Portal',     ini:'GTM Acceleration',       rgn:'apac',st:'On Track', sg:2,owner:'Alejandro O.',due:'Aug 1', color:'#6478C8',desc:'Self-service partner portal.',tasks:[]},
+    {id:'an', name:'Analytics Dashboard',ini:'Platform Modernization', rgn:'na',  st:'On Track', sg:1,owner:'Priya S.',   due:'Sep 1', color:'#4C8EE8',desc:'Executive analytics suite.',tasks:[]},
+    {id:'onb',name:'Onboarding Revamp',  ini:'Customer Experience',    rgn:'emea',st:'At Risk',  sg:2,owner:'James T.',   due:'Jun 15',color:'#E09B3A',desc:'End-to-end onboarding redesign.',tasks:[]},
+  ],
+  cur: null, aiH: [], customField: null, importRows: null, fromView: 'projects',
+};
+
+const SEED = {
+  crm:[{n:'Salesforce migration', s:'Complete',  a:'Sarah K.',    p:'High',    d:'May 10',pct:100},
+       {n:'Custom object mapping',s:'In Progress',a:'Alejandro O.',p:'High',   d:'May 20',pct:65},
+       {n:'AI enrichment',        s:'In Progress',a:'Dev Team',   p:'Medium',  d:'Jun 1', pct:40},
+       {n:'UAT with sales',       s:'Not Started',a:'Sarah K.',   p:'Medium',  d:'Jun 15',pct:0}],
+  dat:[{n:'Architecture doc',     s:'Complete',  a:'Priya S.',   p:'Critical', d:'Apr 1', pct:100},
+       {n:'Kafka migration',      s:'In Progress',a:'Dev Team',  p:'High',     d:'May 28',pct:55},
+       {n:'Snowflake integration',s:'Not Started',a:'Alejandro O.',p:'High',   d:'Jun 10',pct:0}],
+  mob:[{n:'UX wireframes',        s:'Complete',  a:'Design',     p:'High',     d:'Apr 5', pct:100},
+       {n:'iOS development',      s:'In Progress',a:'Dev Team',  p:'Critical', d:'May 25',pct:42},
+       {n:'Android development',  s:'Blocked',   a:'Dev Team',   p:'Critical', d:'May 25',pct:30},
+       {n:'App Store submission', s:'Not Started',a:'James T.',  p:'High',     d:'May 28',pct:0}],
+  sec:[{n:'Pen test kickoff',     s:'In Progress',a:'Maria C.',  p:'Critical', d:'Apr 20',pct:20},
+       {n:'SOC2 evidence',        s:'Not Started',a:'Ops Team',  p:'High',     d:'Apr 25',pct:0}],
+  prt:[{n:'Requirements doc',    s:'Complete',  a:'Alejandro O.',p:'High',    d:'Apr 10',pct:100},
+       {n:'Design system',       s:'In Progress',a:'Design',    p:'Medium',   d:'May 15',pct:70},
+       {n:'SSO integration',     s:'Not Started',a:'Dev Team',  p:'High',     d:'Jun 1', pct:0}],
+  an: [{n:'Dashboard wireframes', s:'Complete',  a:'Design',     p:'High',    d:'Apr 20',pct:100},
+       {n:'Backend API layer',   s:'In Progress',a:'Dev Team',  p:'High',     d:'Jun 1', pct:35}],
+  onb:[{n:'Journey mapping',      s:'Complete',  a:'James T.',  p:'High',     d:'Apr 12',pct:100},
+       {n:'New flow build',       s:'In Progress',a:'Dev Team', p:'High',     d:'May 30',pct:60},
+       {n:'Content migration',   s:'Blocked',    a:'Ops Team',  p:'Medium',   d:'Jun 1', pct:25}],
+};
+Object.entries(SEED).forEach(([id,ts]) => {
+  const p = D.projects.find(p => p.id===id);
+  if (p) p.tasks = ts.map((t,i) => ({...t, id: id+i}));
+});
+
+// ═══════════ ROLLUPS ════════════════════════
+const rP = p => {
+  const t = p.tasks||[];
+  return { total:t.length, done:t.filter(x=>x.s==='Complete').length, blocked:t.filter(x=>x.s==='Blocked').length, inprog:t.filter(x=>x.s==='In Progress').length, pct:t.length?Math.round(t.reduce((s,x)=>s+x.pct,0)/t.length):0 };
+};
+const rAll = ps => {
+  const all = ps.flatMap(p=>p.tasks||[]);
+  const pct = ps.length ? Math.round(ps.reduce((s,p)=>s+rP(p).pct,0)/ps.length) : 0;
+  return { total:ps.length, onTrack:ps.filter(p=>p.st==='On Track').length, atRisk:ps.filter(p=>p.st==='At Risk').length, offTrack:ps.filter(p=>p.st==='Off Track').length, pct, totalTasks:all.length, blocked:all.filter(t=>t.s==='Blocked').length, done:all.filter(t=>t.s==='Complete').length };
+};
+
+// ═══════════ HELPERS ════════════════════════
+const CM = {'On Track':'g','At Risk':'a','Off Track':'r','Planning':'b','Complete':'g','In Progress':'b','Not Started':'m','Blocked':'r','Critical':'r','High':'a','Medium':'b','Low':'m'};
+const chip = s => `<span class="chip ${CM[s]||'m'}">${s}</span>`;
+const pbar = (pct,h=3) => `<div class="prog" style="height:${h}px"><div class="pf ${pct>=60?'pfg':pct>=30?'pfa':'pfb'}" style="width:${pct}%"></div></div>`;
+const ach = n => { const c=aC(n),i=aI(n); return `<div class="aw"><div class="ap" style="background:${c}18;color:${c}">${i}</div><span style="font-size:12px;color:var(--t2)">${n}</span></div>`; };
+const ibar = pct => `<div class="ibar"><div class="tr"><div class="pf pfg" style="width:${pct}%;height:100%;border-radius:2px"></div></div><div class="pct">${pct}%</div></div>`;
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 2400);
+}
+
+// ═══════════ NAV ════════════════════════════
+let curView = 'portfolio';
+function nav(id) {
+  curView = id;
+  document.querySelectorAll('.tnav').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.tnav').forEach(b => { if(b.textContent.toLowerCase().trim()===id) b.classList.add('on'); });
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.getElementById('v-'+id)?.classList.add('on');
+  buildSB(id);
+  if(id==='portfolio') renderPF();
+  else if(id==='projects') renderPJ();
+  else if(id==='tasks') renderTK('all');
+  else if(id==='resources') renderRS();
+}
+function loadP(id) {
+  D.cur = D.projects.find(p=>p.id===id);
+  D.fromView = curView;
+  document.getElementById('pd-bc-from').textContent = curView.charAt(0).toUpperCase()+curView.slice(1);
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-pd').classList.add('on');
+  renderPD('tasks');
+}
+function navBack() {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-'+D.fromView)?.classList.add('on');
+  curView = D.fromView;
+}
+
+// ═══════════ SIDEBAR ════════════════════════
+function buildSB(section) {
+  const sb = document.getElementById('sb');
+  const sections = {
+    portfolio: [
+      {sec:'Views'}, {lbl:'All Portfolios',ic:'◈',fn:()=>renderPF()}, {lbl:'By Initiative',ic:'◆',fn:()=>renderPF()}, {lbl:'By Region',ic:'◎',fn:()=>renderPF()},
+      {sec:'Initiatives'}, {lbl:'GTM Acceleration',dot:'#34C77B',fn:()=>{document.getElementById('pf-ini').value='GTM Acceleration';renderPF();}},
+      {lbl:'Platform Modernization',dot:'#4C8EE8',fn:()=>{document.getElementById('pf-ini').value='Platform Modernization';renderPF();}},
+      {lbl:'Ops Excellence',dot:'#E05555',fn:()=>{document.getElementById('pf-ini').value='Ops Excellence';renderPF();}},
+      {lbl:'Customer Experience',dot:'#E09B3A',fn:()=>{document.getElementById('pf-ini').value='Customer Experience';renderPF();}},
+    ],
+    projects: [
+      {sec:'Projects'},
+      ...D.projects.map(p=>({lbl:p.name,dot:p.color,fn:()=>loadP(p.id)})),
+    ],
+    tasks: [
+      {sec:'Filter'}, {lbl:'All Tasks',ic:'≡',fn:()=>renderTK('all')}, {lbl:'My Tasks',ic:'◉',fn:()=>renderTK('mine')}, {lbl:'Blocked',ic:'⊗',fn:()=>renderTK('blocked')},
+    ],
+    resources: [
+      {sec:'Teams'}, {lbl:'All Members',ic:'◈'}, {lbl:'Engineering',dot:'#4C8EE8'}, {lbl:'Design',dot:'#E09B3A'},
+    ],
+  };
+  const items = sections[section]||[];
+  sb.innerHTML = '';
+  items.forEach(item => {
+    if (item.sec) { const el=document.createElement('div');el.className='sb-section';el.textContent=item.sec;sb.appendChild(el);return; }
+    const el = document.createElement('div'); el.className='sb-item';
+    if (item.dot) { const d=document.createElement('span');d.className='sb-dot';d.style.background=item.dot;el.appendChild(d); }
+    else if (item.ic) { const s=document.createElement('span');s.style.cssText='width:14px;font-size:12px;opacity:.7';s.textContent=item.ic;el.appendChild(s); }
+    const tx = document.createElement('span'); tx.textContent=item.lbl; el.appendChild(tx);
+    if (item.fn) el.onclick = () => { document.querySelectorAll('.sb-item').forEach(e=>e.classList.remove('on')); el.classList.add('on'); item.fn(); };
+    sb.appendChild(el);
+  });
+}
+
+// ═══════════ PORTFOLIO ══════════════════════
+function renderPF() {
+  const ini = document.getElementById('pf-ini')?.value||'all';
+  const rgn = document.getElementById('pf-rgn')?.value||'all';
+  let ps = D.projects.filter(p => (ini==='all'||p.ini===ini) && (rgn==='all'||p.rgn===rgn));
+  const r = rAll(ps);
+  document.getElementById('pf-pm').textContent = `${r.total} projects · ${r.totalTasks} tasks · ${r.pct}% avg completion`;
+  const inis = [...new Set(ps.map(p=>p.ini))];
+  let html = `<div class="pad">
+    <div class="stats s4" style="margin-bottom:18px">
+      <div class="sc"><div class="sv">${r.total}</div><div class="sl">Projects</div></div>
+      <div class="sc"><div class="sv g">${r.onTrack}</div><div class="sl">On Track</div></div>
+      <div class="sc"><div class="sv a">${r.atRisk+r.offTrack}</div><div class="sl">Off Plan</div></div>
+      <div class="sc"><div class="sv b">${r.pct}%</div><div class="sl">Avg Progress</div></div>
+    </div>`;
+  inis.forEach(ini2 => {
+    const iPs = ps.filter(p=>p.ini===ini2); const iR = rAll(iPs);
+    html += `<div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;margin-top:4px">${ini2}</div>
+    <div style="background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+        <div style="font-size:11.5px;color:var(--t2)">${iR.total} projects · ${iR.totalTasks} tasks</div>
+        <div style="font-size:20px;font-weight:700">${iR.pct}%</div>
+      </div>${pbar(iR.pct,5)}
+      <div style="display:flex;gap:16px;margin-top:8px">
+        <span style="font-size:10.5px;color:var(--green)">${iR.onTrack} on track</span>
+        <span style="font-size:10.5px;color:var(--amber)">${iR.atRisk} at risk</span>
+        <span style="font-size:10.5px;color:var(--red)">${iR.blocked} blocked</span>
+      </div>
+    </div>
+    <div class="tbl-wrap" style="margin-bottom:20px">
+      <table class="tbl"><thead><tr><th>Project</th><th>Status</th><th>Owner</th><th>Tasks</th><th>Blocked</th><th>Progress</th><th>Due</th></tr></thead><tbody>`;
+    iPs.forEach(p => {
+      const pr = rP(p);
+      html += `<tr class="cl" onclick="loadP('${p.id}')">
+        <td><div class="cp" style="display:flex;align-items:center;gap:7px"><span style="width:6px;height:6px;border-radius:50%;background:${p.color};flex-shrink:0"></span>${p.name}</div></td>
+        <td>${chip(p.st)}</td><td>${ach(p.owner)}</td>
+        <td class="cm">${pr.done}/${pr.total}</td>
+        <td>${pr.blocked>0?`<span class="cm" style="color:var(--red)">${pr.blocked}</span>`:'<span class="cm">—</span>'}</td>
+        <td style="min-width:100px">${ibar(pr.pct)}</td>
+        <td class="cm">${p.due}</td>
+      </tr>`;
+    });
+    html += `<tr class="rup"><td colspan="7" style="padding:6px 14px 6px 21px">↳ Initiative rollup · ${iR.pct}% avg · ${iR.onTrack}/${iR.total} on track · ${iR.blocked} blocked tasks</td></tr>`;
+    html += `</tbody></table></div>`;
+  });
+  html += `</div>`;
+  document.getElementById('pf-body').innerHTML = html;
+}
+
+// ═══════════ PROJECTS ═══════════════════════
+let pjSearch = '';
+function filterPJ(v) { pjSearch=v; renderPJ(); }
+function renderPJ() {
+  const sf = document.getElementById('pj-st')?.value||'all';
+  let ps = D.projects.filter(p => (!pjSearch||p.name.toLowerCase().includes(pjSearch.toLowerCase())) && (sf==='all'||p.st===sf));
+  const r = rAll(ps);
+  document.getElementById('pj-pm').textContent = `${ps.length} projects`;
+  const grps = {};
+  ps.forEach(p => { if(!grps[p.ini])grps[p.ini]=[]; grps[p.ini].push(p); });
+  let html = `<div class="pad">
+    <div class="stats s5" style="margin-bottom:18px">
+      <div class="sc"><div class="sv">${r.total}</div><div class="sl">Total</div></div>
+      <div class="sc"><div class="sv g">${r.onTrack}</div><div class="sl">On Track</div></div>
+      <div class="sc"><div class="sv a">${r.atRisk}</div><div class="sl">At Risk</div></div>
+      <div class="sc"><div class="sv r">${r.offTrack}</div><div class="sl">Off Track</div></div>
+      <div class="sc"><div class="sv b">${r.pct}%</div><div class="sl">Avg</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl"><thead><tr><th>Project</th><th>Initiative</th><th>Status</th><th>Owner</th><th>Tasks</th><th>Progress</th><th>Due</th></tr></thead><tbody>`;
+  Object.entries(grps).forEach(([ini,gps]) => {
+    const gR = rAll(gps);
+    html += `<tr class="gr"><td colspan="7" style="padding:7px 14px"><div style="display:flex;justify-content:space-between"><span class="gl">${ini}</span><span class="cm">${gR.total} projects · ${gR.pct}% avg</span></div></td></tr>`;
+    gps.forEach(p => {
+      const pr = rP(p);
+      html += `<tr class="cl" onclick="loadP('${p.id}')">
+        <td style="padding-left:22px"><div class="cp" style="display:flex;align-items:center;gap:7px"><span style="width:5px;height:5px;border-radius:50%;background:${p.color};flex-shrink:0"></span>${p.name}</div><div class="cm" style="padding-left:12px;margin-top:2px;font-size:11px">${p.desc.substring(0,55)}…</div></td>
+        <td class="cm">${p.ini}</td><td>${chip(p.st)}</td><td>${ach(p.owner)}</td>
+        <td class="cm">${pr.done}/${pr.total}</td>
+        <td style="min-width:100px">${ibar(pr.pct)}</td>
+        <td class="cm">${p.due}</td>
+      </tr>`;
+    });
+    html += `<tr class="rup"><td colspan="7" style="padding:5px 14px 5px 22px">↳ ${gR.pct}% avg · ${gR.onTrack}/${gR.total} on track · ${gR.blocked} blocked</td></tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+  document.getElementById('pj-body').innerHTML = html;
+}
+
+// ═══════════ PROJECT DETAIL ══════════════════
+function renderPD(tab) {
+  const p = D.cur; if (!p) return;
+  const pr = rP(p);
+  document.getElementById('pd-bc-name').textContent = p.name;
+  document.getElementById('pd-title').textContent = p.name;
+  document.getElementById('pd-meta').textContent = `${p.ini} · ${p.owner} · ${pr.total} tasks · ${pr.pct}% complete`;
+  const sc = document.getElementById('pd-chip');
+  sc.className = `chip ${CM[p.st]||'m'}`; sc.textContent = p.st;
+  // stages
+  document.getElementById('pd-stages').innerHTML = STAGES.map((s,i) => {
+    const c = i<p.sg?'done':i===p.sg?'curr':'ahead';
+    const lbl = i<p.sg?'✓ Done':i===p.sg?'● Active':'○ Next';
+    const w = i<p.sg?'100%':i===p.sg?'50%':'0%';
+    return `<div class="stage ${c}" onclick="advS(${i})"><div class="stage-lbl">${lbl}</div><div class="stage-name">${s}</div><div class="stage-bar" style="width:${w}"></div></div>`;
+  }).join('');
+  // dstats
+  document.getElementById('pd-dstats').innerHTML = `
+    <div class="ds"><div class="dsv" style="color:var(--blue)">${pr.pct}%</div><div class="dsl">Progress</div></div>
+    <div class="ds"><div class="dsv" style="color:var(--green)">${pr.done}</div><div class="dsl">Done</div></div>
+    <div class="ds"><div class="dsv" style="color:var(--blue)">${pr.inprog}</div><div class="dsl">Active</div></div>
+    <div class="ds"><div class="dsv" style="color:${pr.blocked?'var(--red)':'var(--t2)'}">${pr.blocked}</div><div class="dsl">Blocked</div></div>`;
+  // tab sync
+  document.querySelectorAll('#v-pd .tab').forEach((b,i)=>b.classList.toggle('on',['tasks','sheet','info'][i]===tab));
+  if (tab==='tasks') renderPDTasks();
+  else if (tab==='sheet') renderPDSheet();
+  else renderPDInfo();
+}
+function pdTab(tab,btn) { document.querySelectorAll('#v-pd .tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderPD(tab); }
+function activePDTab() { const i=[...document.querySelectorAll('#v-pd .tab')].findIndex(b=>b.classList.contains('on'));return['tasks','sheet','info'][i]||'tasks'; }
+function advS(i) { const p=D.cur; if(i===p.sg&&p.sg<STAGES.length-1){p.sg++;renderPD(activePDTab());toast('Stage → '+STAGES[p.sg]);} }
+
+function renderPDTasks() {
+  const p = D.cur; const pr = rP(p); const cf = D.customField;
+  const grps = {'In Progress':[],'Blocked':[],'Not Started':[],'Complete':[]};
+  (p.tasks||[]).forEach(t=>{(grps[t.s]||grps['Not Started']).push(t);});
+  let html = `<div style="flex:1;overflow-y:auto;padding-bottom:24px">`;
+  Object.entries(grps).filter(([,ts])=>ts.length).forEach(([grp,ts]) => {
+    const ga = Math.round(ts.reduce((s,t)=>s+t.pct,0)/ts.length);
+    html += `<div class="dlbl">${grp} <span style="font-size:9px;color:var(--t3);font-weight:400">${ts.length} · avg ${ga}%</span></div>
+    <div class="tbl-wrap" style="margin:0 24px 4px">`;
+    ts.forEach(t => {
+      const ck=t.s==='Complete'?'dn':t.s==='Blocked'?'bk':t.s==='In Progress'?'ip':'';
+      const ic=t.s==='Complete'?'✓':t.s==='Blocked'?'✕':t.s==='In Progress'?'●':'';
+      html+=`<div class="trow">
+        <div class="tck ${ck}">${ic}</div>
+        <div class="tbody2"><div class="tn ${t.s==='Complete'?'dn':''}">${t.n}</div>
+        <div class="tmeta">${t.a} · Due ${t.d}</div>
+        ${t.s!=='Complete'?pbar(t.pct):''}</div>
+        <div style="display:flex;align-items:center;gap:8px">${chip(t.p)}${cf?`<span style="font-size:11px;color:var(--t3);background:var(--s3);padding:2px 8px;border-radius:4px">${t.cfv||'—'}</span>`:''}</div>
+      </div>`;
+    });
+    html += `</div><div class="rollup">↳ ${ts.filter(t=>t.pct===100).length}/${ts.length} done · avg ${ga}%</div>`;
+  });
+  html += `<div class="rollup" style="margin:2px 24px 0">↳ Project · ${pr.pct}% · ${pr.done}/${pr.total} done · ${pr.blocked} blocked</div></div>`;
+  document.getElementById('pd-body').innerHTML = html;
+}
+
+// ═══════════ SPREADSHEET ════════════════════
+const COLS = [
+  {k:'n',  label:'Task Name',type:'text',w:'210px',ph:'Task…'},
+  {k:'s',  label:'Status',  type:'sel', w:'130px',opts:STATUSES},
+  {k:'a',  label:'Assignee',type:'text',w:'130px',ph:'Name…'},
+  {k:'p',  label:'Priority',type:'sel', w:'100px',opts:PRIORITIES},
+  {k:'d',  label:'Due Date',type:'date',w:'120px'},
+  {k:'pct',label:'% Done',  type:'num', w:'85px'},
+];
+let selRows = new Set();
+
+function renderPDSheet() {
+  const el = document.getElementById('pd-body');
+  el.innerHTML = '';
+  el.style.cssText = 'flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0';
+  const wrap = document.createElement('div'); wrap.className='sw';
+  const tb = document.createElement('div'); tb.className='stb';
+  [['+ Row',()=>addRow()],['+ 5 Rows',()=>addRows(5)],['✕ Del',()=>delRows()],null,['↑ Import',()=>document.getElementById('fi-input').click()],['↓ CSV',()=>exportCSV()],null,['Save',()=>{syncGrid();toast('Saved');}]].forEach(item=>{
+    if(!item){const s=document.createElement('div');s.className='tsep';tb.appendChild(s);return;}
+    const [lbl,fn]=item; const b=document.createElement('button');b.className='tbb'+(lbl==='Save'?' hi':'');b.textContent=lbl;b.onclick=fn;tb.appendChild(b);
+  });
+  const outer=document.createElement('div');outer.className='go';
+  const tbl=document.createElement('table');tbl.className='gtbl';tbl.id='gtbl';
+  const thead=document.createElement('thead');const hr=document.createElement('tr');hr.innerHTML='<th class="rn">#</th>';
+  COLS.forEach(c=>{const th=document.createElement('th');th.textContent=c.label;th.style.minWidth=c.w;th.onclick=()=>sortCol(c.k);hr.appendChild(th);});
+  thead.appendChild(hr);tbl.appendChild(thead);
+  const tbody=document.createElement('tbody');tbody.id='gtbody';tbl.appendChild(tbody);outer.appendChild(tbl);
+  const ab=document.createElement('div');ab.className='add-row-btn';ab.innerHTML='<span style="font-size:16px;color:var(--t3)">+</span> Add row';ab.onclick=addRow;
+  wrap.appendChild(tb);wrap.appendChild(outer);wrap.appendChild(ab);el.appendChild(wrap);
+  populateGrid(D.cur?D.cur.tasks||[]:[]);
+}
+function populateGrid(tasks){const tb=document.getElementById('gtbody');if(!tb)return;tb.innerHTML='';selRows.clear();tasks.forEach(t=>appendRow(t));}
+function appendRow(task){
+  const tb=document.getElementById('gtbody');if(!tb)return;
+  const tr=document.createElement('tr');tr.dataset.id=task.id||('r'+Date.now()+Math.random());
+  const rn=document.createElement('td');rn.className='rn';rn.textContent=tb.rows.length+1;rn.onclick=()=>{const on=tr.classList.toggle('sel');on?selRows.add(tr.dataset.id):selRows.delete(tr.dataset.id);};tr.appendChild(rn);
+  COLS.forEach(c=>{const td=document.createElement('td');let inp;
+    if(c.type==='sel'){inp=document.createElement('select');inp.className='csel';c.opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;if(task[c.k]===o)op.selected=true;inp.appendChild(op);});inp.onchange=syncGrid;}
+    else if(c.type==='date'){inp=document.createElement('input');inp.type='date';inp.className='cdate';inp.value=task[c.k]||'';inp.onchange=syncGrid;}
+    else if(c.type==='num'){inp=document.createElement('input');inp.type='number';inp.className='cnum';inp.min=0;inp.max=100;inp.value=task[c.k]||0;inp.oninput=syncGrid;}
+    else{inp=document.createElement('input');inp.type='text';inp.className='ci';inp.value=task[c.k]||'';inp.placeholder=c.ph||'';inp.oninput=syncGrid;}
+    td.appendChild(inp);tr.appendChild(td);
+  });
+  tb.appendChild(tr);renumber();
+}
+function renumber(){document.querySelectorAll('#gtbody tr').forEach((r,i)=>{const rn=r.querySelector('.rn');if(rn)rn.textContent=i+1;});}
+function addRow(){if(!D.cur)return;appendRow({id:'t'+Date.now(),n:'',s:'Not Started',a:'',p:'Medium',d:'',pct:0});syncGrid();}
+function addRows(n){for(let i=0;i<n;i++)addRow();}
+function delRows(){if(!selRows.size){toast('Click row numbers to select');return;}document.querySelectorAll('#gtbody tr').forEach(tr=>{if(selRows.has(tr.dataset.id))tr.remove();});selRows.clear();renumber();syncGrid();toast('Deleted');}
+function sortCol(k){if(!D.cur)return;D.cur.tasks.sort((a,b)=>String(a[k]||'').localeCompare(String(b[k]||'')));populateGrid(D.cur.tasks);}
+function syncGrid(){const p=D.cur;if(!p)return;p.tasks=[];document.querySelectorAll('#gtbody tr').forEach(tr=>{const cells=[...tr.querySelectorAll('td:not(.rn)')];const t={id:tr.dataset.id};COLS.forEach((c,ci)=>{const inp=cells[ci]?.querySelector('input,select');if(inp)t[c.k]=c.type==='num'?Math.min(100,Math.max(0,parseInt(inp.value)||0)):inp.value||'';});if(t.n)p.tasks.push(t);});}
+function exportCSV(){const p=D.cur;if(!p)return;syncGrid();const hdr=COLS.map(c=>c.label).join(',');const rows=p.tasks.map(t=>COLS.map(c=>`"${String(t[c.k]||'').replace(/"/g,'""')}"`).join(','));const blob=new Blob([[hdr,...rows].join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${(p.name||'tasks').replace(/\s+/g,'_')}.csv`;a.click();URL.revokeObjectURL(a.href);toast('Exported');}
+
+function renderPDInfo(){const p=D.cur;const pr=rP(p);document.getElementById('pd-body').innerHTML=`<div style="flex:1;overflow-y:auto;padding:18px 24px 28px"><div class="tbl-wrap" style="margin-bottom:12px"><table class="tbl"><tbody>${[['Initiative',p.ini],['Owner',p.owner],['Status',chip(p.st)],['Due',p.due],['Stage',STAGES[p.sg]]].map(([k,v])=>`<tr><td style="color:var(--t2);width:120px">${k}</td><td>${v}</td></tr>`).join('')}</tbody></table></div><div style="font-size:13.5px;color:var(--t2);line-height:1.65;margin-bottom:18px">${p.desc}</div><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);margin-bottom:6px"><span>Progress</span><span>${pr.pct}%</span></div>${pbar(pr.pct,5)}</div>`;}
+
+// ═══════════ TASKS ══════════════════════════
+let tkActive='all';
+function renderTK(f){
+  if(f)tkActive=f;
+  const all=D.projects.flatMap(p=>(p.tasks||[]).map(t=>({...t,proj:p.name,pid:p.id,color:p.color})));
+  let ts=all;if(tkActive==='mine')ts=all.filter(t=>['Alejandro O.','Dev Team'].includes(t.a));if(tkActive==='blocked')ts=all.filter(t=>t.s==='Blocked');
+  const total=ts.length,done=ts.filter(t=>t.s==='Complete').length,blk=ts.filter(t=>t.s==='Blocked').length,ip=ts.filter(t=>t.s==='In Progress').length;
+  document.getElementById('tk-pm').textContent=`${total} tasks · ${done} complete · ${blk} blocked`;
+  const byP={};ts.forEach(t=>{if(!byP[t.proj])byP[t.proj]=[];byP[t.proj].push(t);});
+  let html=`<div class="pad"><div class="stats s5" style="margin-bottom:18px"><div class="sc"><div class="sv">${total}</div><div class="sl">Total</div></div><div class="sc"><div class="sv g">${done}</div><div class="sl">Done</div></div><div class="sc"><div class="sv b">${ip}</div><div class="sl">Active</div></div><div class="sc"><div class="sv r">${blk}</div><div class="sl">Blocked</div></div><div class="sc"><div class="sv b">${ts.length?Math.round(ts.reduce((s,t)=>s+t.pct,0)/ts.length):0}%</div><div class="sl">Avg</div></div></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Task</th><th>Project</th><th>Status</th><th>Assignee</th><th>Priority</th><th>Due</th><th>Progress</th></tr></thead><tbody>`;
+  Object.entries(byP).forEach(([proj,pts])=>{
+    const pd=pts.filter(t=>t.s==='Complete').length,pb=pts.filter(t=>t.s==='Blocked').length,pa=Math.round(pts.reduce((s,t)=>s+t.pct,0)/pts.length);const pc=pts[0]?.color||'#4C8EE8';
+    html+=`<tr class="gr"><td colspan="7" style="padding:7px 14px"><div style="display:flex;justify-content:space-between"><span class="gl" style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:${pc};display:inline-block"></span>${proj}</span><span class="cm">${pts.length} tasks · ${pd} done · ${pb} blocked</span></div></td></tr>`;
+    pts.forEach(t=>{const ck=t.s==='Complete'?'dn':t.s==='Blocked'?'bk':t.s==='In Progress'?'ip':'';const ic=t.s==='Complete'?'✓':t.s==='Blocked'?'✕':t.s==='In Progress'?'●':'';
+    html+=`<tr class="cl" onclick="loadP('${t.pid}')"><td style="padding-left:22px"><div class="trow" style="padding:0;border:none"><div class="tck ${ck}" style="flex-shrink:0">${ic}</div><div class="tbody2"><div class="tn ${t.s==='Complete'?'dn':''}">${t.n}</div></div></div></td><td class="cm">${t.proj}</td><td>${chip(t.s)}</td><td>${ach(t.a)}</td><td>${chip(t.p)}</td><td class="cm">${t.d}</td><td style="min-width:90px">${ibar(t.pct)}</td></tr>`;});
+    html+=`<tr class="rup"><td colspan="7" style="padding:5px 14px 5px 22px">↳ ${proj} · ${pa}% avg · ${pd}/${pts.length} done</td></tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('tk-body').innerHTML=html;
+}
+function tkSeg(f,btn){document.querySelectorAll('#v-tasks .tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderTK(f);}
+
+// ═══════════ RESOURCES ══════════════════════
+const TEAM=[{n:'Alejandro O.',role:'Sr. Solutions Eng.'},{n:'Sarah K.',role:'CRM PM'},{n:'Priya S.',role:'Platform Architect'},{n:'James T.',role:'Mobile Lead'},{n:'Maria C.',role:'Ops & Security'},{n:'Dev Team',role:'Engineering'},{n:'Design',role:'UX/UI'},{n:'Ops Team',role:'Operations'}];
+function renderRS(){
+  const all=D.projects.flatMap(p=>p.tasks||[]);const over=TEAM.filter(r=>all.filter(t=>t.a===r.n&&t.s!=='Complete').length>3).length;
+  let html=`<div class="pad"><div class="stats s3" style="margin-bottom:18px"><div class="sc"><div class="sv">${TEAM.length}</div><div class="sl">Members</div></div><div class="sc"><div class="sv ${over?'a':''}">${over}</div><div class="sl">Over Cap.</div></div><div class="sc"><div class="sv">${all.filter(t=>t.s!=='Complete').length}</div><div class="sl">Open Tasks</div></div></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Member</th><th>Role</th><th>Open Tasks</th><th>Load</th></tr></thead><tbody>`;
+  TEAM.forEach(r=>{const open=all.filter(t=>t.a===r.n&&t.s!=='Complete');const ld=Math.min(100,Math.round(open.length/4*100));const lc=ld>80?'var(--red)':ld>60?'var(--amber)':'var(--green)';html+=`<tr><td>${ach(r.n)}</td><td class="cm">${r.role}</td><td class="cm">${open.length}</td><td style="min-width:120px"><div class="ibar"><div class="tr"><div class="pf" style="width:${ld}%;background:${lc};height:100%;border-radius:2px"></div></div><div class="pct">${ld}%</div></div></td></tr>`;});
+  html+=`</tbody></table></div></div>`;
+  document.getElementById('rs-body').innerHTML=html;
+}
+
+// ═══════════ CSV / XLSX IMPORT ══════════════
+function handleFile(inp){const f=inp.files[0];if(f)processFile(f);inp.value='';}
+function processFile(file){
+  const ext=file.name.split('.').pop().toLowerCase();const reader=new FileReader();
+  if(ext==='csv'||ext==='tsv'){reader.onload=e=>parseCSVText(e.target.result);reader.readAsText(file);}
+  else if(ext==='xlsx'||ext==='xls'){reader.onload=e=>parseXLSX(e.target.result);reader.readAsArrayBuffer(file);}
+  else toast('Use CSV or Excel (.xlsx)');
+}
+function splitLine(line,sep){const res=[];let cur='';let inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"')inQ=!inQ;else if(c===sep&&!inQ){res.push(cur.replace(/^"|"$/g,'').replace(/""/g,'"'));cur='';}else cur+=c;}res.push(cur.replace(/^"|"$/g,'').replace(/""/g,'"'));return res;}
+function parseCSVText(text){
+  const lines=text.trim().split(/\r?\n/).filter(l=>l.trim());if(lines.length<2){toast('Need header + data');return;}
+  const sep=lines[0].includes('\t')?'\t':',';const headers=splitLine(lines[0],sep).map(h=>h.trim().toLowerCase());
+  const find=vs=>headers.findIndex(h=>vs.some(v=>h.includes(v)));
+  const m={n:find(['task name','task','name','title','item']),s:find(['status','state']),a:find(['assignee','assigned','owner']),p:find(['priority','prio']),d:find(['due','deadline','date']),pct:find(['progress','percent','%','completion'])};
+  const get=(r,i)=>i>=0&&i<r.length?r[i].trim():'';
+  const normS=s=>{const u=s.toLowerCase();if(u.includes('complet')||u.includes('done'))return'Complete';if(u.includes('progress')||u.includes('active')||u.includes('wip'))return'In Progress';if(u.includes('block'))return'Blocked';return'Not Started';};
+  const normP=p=>{const u=p.toLowerCase();if(u.includes('crit'))return'Critical';if(u.includes('high'))return'High';if(u.includes('low'))return'Low';return'Medium';};
+  const rows=lines.slice(1).map(l=>splitLine(l,sep));
+  const parsed=rows.filter(r=>r.some(c=>c.trim())).map((r,i)=>({id:'imp'+Date.now()+i,n:get(r,m.n)||'Task '+(i+1),s:normS(get(r,m.s)),a:get(r,m.a)||'',p:normP(get(r,m.p)),d:get(r,m.d)||'',pct:Math.min(100,Math.max(0,parseInt(get(r,m.pct))||0))}));
+  if(!parsed.length){toast('No data found');return;}
+  const p=D.cur;if(!p){toast('Open a project first');return;}
+  p.tasks.push(...parsed);
+  toast(`${parsed.length} tasks imported into ${p.name}`);
+  renderPD(activePDTab());
+}
+function parseXLSX(buf){
+  try{const bytes=new Uint8Array(buf);const dec=new TextDecoder('utf-8',{fatal:false});const files={};let i=0;
+    while(i<bytes.length-30){if(bytes[i]===0x50&&bytes[i+1]===0x4B&&bytes[i+2]===0x03&&bytes[i+3]===0x04){const method=bytes[i+8]|(bytes[i+9]<<8);const compSize=bytes[i+18]|(bytes[i+19]<<8)|(bytes[i+20]<<16)|(bytes[i+21]<<24);const fnLen=bytes[i+26]|(bytes[i+27]<<8);const exLen=bytes[i+28]|(bytes[i+29]<<8);const fname=dec.decode(bytes.slice(i+30,i+30+fnLen));const start=i+30+fnLen+exLen;if(method===0&&(fname.includes('sheet1.xml')||fname.includes('sharedStrings.xml')))files[fname]=dec.decode(bytes.slice(start,start+compSize));i=start+compSize;}else i++;}
+    const ss=[];const ssKey=Object.keys(files).find(k=>k.includes('sharedStrings'));if(ssKey)(files[ssKey].match(/<t[^>]*>([^<]*)<\/t>/g)||[]).forEach(m=>{ss.push(m.replace(/<t[^>]*>/,'').replace(/<\/t>/,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));});
+    const shKey=Object.keys(files).find(k=>k.includes('sheet1.xml'));if(!shKey){toast('Try saving as CSV');return;}
+    const rowsXml=files[shKey].match(/<row[^>]*>[\s\S]*?<\/row>/g)||[];
+    const csvRows=rowsXml.map(row=>{const cells=row.match(/<c[^>]*>[\s\S]*?<\/c>/g)||[];return cells.map(cell=>{const t=(cell.match(/\st="([^"]*)"/)|| [])[1];const v=(cell.match(/<v>([^<]*)<\/v>/)|| [])[1]||'';return t==='s'?(ss[parseInt(v)]||''):v;});});
+    parseCSVText(csvRows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'));
+  }catch(e){toast('Excel error — try saving as CSV');}
+}
+
+// ═══════════ MODALS ══════════════════════════
+function openModal(id){document.getElementById(id).classList.add('on');}
+function closeModal(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
+function createProj(){
+  const n=document.getElementById('np-n').value.trim();if(!n){toast('Enter a name');return;}
+  const p={id:'p'+Date.now(),name:n,ini:document.getElementById('np-i').value,rgn:'na',st:document.getElementById('np-s').value,sg:0,owner:document.getElementById('np-o').value||'Unassigned',due:document.getElementById('np-d').value||'TBD',color:'#4C8EE8',desc:document.getElementById('np-desc').value||'',tasks:[]};
+  D.projects.push(p);closeModal('m-proj');toast(`"${n}" created`);renderPF();renderPJ();buildSB(curView);
+}
+function saveTask(){
+  const n=document.getElementById('nt-n').value.trim();if(!n){toast('Enter a task name');return;}
+  const pid=document.getElementById('nt-p').value;const p=D.projects.find(p=>p.id===pid);if(!p)return;
+  p.tasks.push({id:'t'+Date.now(),n,s:document.getElementById('nt-s').value,a:document.getElementById('nt-a').value||'Unassigned',p:document.getElementById('nt-pr').value,d:document.getElementById('nt-d').value||'TBD',pct:0});
+  closeModal('m-task');toast('Task added');if(D.cur?.id===pid)renderPD(activePDTab());renderTK(tkActive);
+}
+function saveCF(){
+  const n=document.getElementById('cf-n').value.trim();if(!n)return;const p=D.cur;if(!p)return;
+  D.customField={n,t:document.getElementById('cf-t').value};p.tasks.forEach(t=>{if(!t.cfv)t.cfv='—';});
+  closeModal('m-cf');toast(`"${n}" field added`);renderPDTasks();
+}
+function openTaskModal(){const sel=document.getElementById('nt-p');sel.innerHTML=D.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');if(D.cur)sel.value=D.cur.id;openModal('m-task');}
+
+// ═══════════ AI ═════════════════════════════
+let aiOpen=false;
+function toggleAI(){aiOpen=!aiOpen;document.getElementById('ai-panel').classList.toggle('on',aiOpen);document.getElementById('ai-toggle').classList.toggle('on',aiOpen);}
+function qp(t){document.getElementById('ai-in').value=t;sendAI();}
+function addAM(role,text){const c=document.getElementById('ai-msgs');const el=document.createElement('div');if(role==='user'){el.className='m-user';el.textContent=text;}else{el.className='m-apex';el.innerHTML=`<div class="who">Apex AI</div>${text.replace(/\n/g,'<br>')}`;}c.appendChild(el);c.scrollTop=c.scrollHeight;}
+function addThink(){const c=document.getElementById('ai-msgs');const el=document.createElement('div');el.id='thk';el.className='m-apex';el.innerHTML=`<div class="who">Apex AI</div><div class="think"><span></span><span></span><span></span></div>`;c.appendChild(el);c.scrollTop=c.scrollHeight;}
+function rmThink(){document.getElementById('thk')?.remove();}
+async function sendAI(){
+  const inp=document.getElementById('ai-in');const msg=inp.value.trim();if(!msg)return;
+  inp.value='';document.getElementById('ai-snd').disabled=true;
+  if(!aiOpen)toggleAI();addAM('user',msg);addThink();
+  const r=rAll(D.projects);
+  const ctx=`You are Apex AI inside Apex, a project management platform. User: Alejandro Ochoa. Portfolio: ${D.projects.map(p=>{const pr=rP(p);return`${p.name}[${p.ini}] ${p.st} ${pr.pct}% ${pr.done}/${pr.total}t ${pr.blocked}blk`;}).join(' | ')} — ${r.total} projects ${r.onTrack} on-track ${r.atRisk} at-risk ${r.pct}% avg. Reply 2-4 sentences, plain text.`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:ctx,messages:[...D.aiH,{role:'user',content:msg}]})});
+    const data=await res.json();const reply=data.content?.[0]?.text||'Error.';
+    D.aiH.push({role:'user',content:msg},{role:'assistant',content:reply});rmThink();addAM('apex',reply);
+    if(msg.toLowerCase().includes('duplicate')){const src=D.projects.find(p=>msg.toLowerCase().includes(p.name.toLowerCase()));if(src){D.projects.push({...src,id:src.id+'c',name:src.name+' (Copy)',tasks:src.tasks.map(t=>({...t,id:'c'+t.id})),sg:0});toast(`Duplicated "${src.name}"`);renderPF();renderPJ();}}
+  }catch(e){rmThink();addAM('apex','Connection issue.');}
+  document.getElementById('ai-snd').disabled=false;
+}
+
+// ═══════════ INIT ════════════════════════════
+// Hook task modal open to pre-populate project list
+document.querySelectorAll('[onclick="openModal(\'m-task\')"]').forEach(el => { el.onclick = openTaskModal; });
+nav('portfolio');
+</script>
+</body>
+</html>
