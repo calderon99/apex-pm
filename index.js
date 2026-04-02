@@ -25,6 +25,8 @@ if (!process.env.APP_URL) {
   const domain = process.env.REPLIT_DEV_DOMAIN || `localhost:5000`;
   process.env.APP_URL = `https://${domain}`;
 }
+console.log('APP_URL:', process.env.APP_URL);
+console.log('OAuth callback URL:', process.env.APP_URL + '/auth/google/callback');
 
 // ── Auth (Google OAuth + guards) ─────────────────────────
 setupAuth(app, sessionMiddleware);
