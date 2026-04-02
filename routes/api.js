@@ -1,0 +1,184 @@
+const express = require('express');
+const router = express.Router();
+const { query } = require('../db');
+
+const auth = (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
+  next();
+};
+
+// ── Profile ───────────────────────────────────────────────────────
+router.get('/me', auth, (req, res) => {
+  const { id, name, email, avatar_url, job_title, bio, is_profile_complete, settings } = req.user;
+  res.json({ id, name, email, avatar_url, job_title, bio, is_profile_complete, settings: settings || {} });
+});
+
+router.put('/profile', auth, async (req, res) => {
+  const { name, job_title, bio, settings } = req.body;
+  try {
+    const result = await query(
+      `UPDATE users SET name=$1, job_title=$2, bio=$3, settings=$4,
+       is_profile_complete=true, updated_at=NOW() WHERE id=$5 RETURNING *`,
+      [name || req.user.name, job_title || null, bio || null,
+       JSON.stringify(settings || {}), req.user.id]
+    );
+    const u = result.rows[0];
+    req.session.passport = req.session.passport || {};
+    const { id, name: n, email, avatar_url, job_title: jt, bio: b, is_profile_complete, settings: s } = u;
+    res.json({ id, name: n, email, avatar_url, job_title: jt, bio: b, is_profile_complete, settings: s || {} });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Projects ──────────────────────────────────────────────────────
+router.get('/projects', auth, async (req, res) => {
+  try {
+    const port = await query('SELECT id FROM portfolios WHERE owner_id=$1 LIMIT 1', [req.user.id]);
+    if (!port.rows.length) return res.json({ projects: [] });
+    const portfolioId = port.rows[0].id;
+
+    const projects = await query(
+      'SELECT * FROM projects WHERE portfolio_id=$1 ORDER BY created_at ASC',
+      [portfolioId]
+    );
+    if (!projects.rows.length) return res.json({ projects: [] });
+
+    const projectIds = projects.rows.map(p => p.id);
+    const tasks = await query(
+      `SELECT * FROM tasks WHERE project_id = ANY($1) AND parent_id IS NULL
+       ORDER BY sort_order ASC, created_at ASC`,
+      [projectIds]
+    );
+
+    const tasksByProject = {};
+    tasks.rows.forEach(t => {
+      if (!tasksByProject[t.project_id]) tasksByProject[t.project_id] = [];
+      tasksByProject[t.project_id].push(dbTaskToFE(t));
+    });
+
+    const result = projects.rows.map(p => dbProjectToFE(p, tasksByProject[p.id] || []));
+    res.json({ projects: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/projects', auth, async (req, res) => {
+  const { name, initiative, region, status, owner, due_date, color, description } = req.body;
+  try {
+    const port = await query('SELECT id FROM portfolios WHERE owner_id=$1 LIMIT 1', [req.user.id]);
+    if (!port.rows.length) return res.status(400).json({ error: 'No portfolio found' });
+    const portfolioId = port.rows[0].id;
+
+    const result = await query(
+      `INSERT INTO projects (portfolio_id, owner_id, name, initiative, region, status,
+       stage, color, due_date, description, owner_name)
+       VALUES ($1,$2,$3,$4,$5,$6,0,$7,$8,$9,$10) RETURNING *`,
+      [portfolioId, req.user.id, name, initiative || '', region || 'na',
+       status || 'On Track', color || '#4C8EE8', due_date || '', description || '',
+       owner || req.user.name]
+    );
+    res.json(dbProjectToFE(result.rows[0], []));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/projects/:id', auth, async (req, res) => {
+  const { name, initiative, region, status, stage, owner, due_date, color, description } = req.body;
+  try {
+    const result = await query(
+      `UPDATE projects SET name=$1, initiative=$2, region=$3, status=$4, stage=$5,
+       owner_name=$6, due_date=$7, color=$8, description=$9, updated_at=NOW()
+       WHERE id=$10 AND owner_id=$11 RETURNING *`,
+      [name, initiative, region, status, stage ?? 0, owner, due_date || '', color, description,
+       req.params.id, req.user.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Project not found' });
+    res.json(dbProjectToFE(result.rows[0], null));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/projects/:id', auth, async (req, res) => {
+  try {
+    await query('DELETE FROM tasks WHERE project_id=$1', [req.params.id]);
+    await query('DELETE FROM projects WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Tasks ─────────────────────────────────────────────────────────
+router.post('/projects/:id/tasks', auth, async (req, res) => {
+  const { name, status, assignee_name, priority, due_date, progress } = req.body;
+  try {
+    const result = await query(
+      `INSERT INTO tasks (project_id, name, status, assignee_name, priority, due_date, progress)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [req.params.id, name, status || 'Not Started', assignee_name || '',
+       priority || 'Medium', due_date || '', progress || 0]
+    );
+    res.json(dbTaskToFE(result.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/tasks/:id', auth, async (req, res) => {
+  const { name, status, assignee_name, priority, due_date, progress } = req.body;
+  try {
+    const result = await query(
+      `UPDATE tasks SET name=$1, status=$2, assignee_name=$3, priority=$4,
+       due_date=$5, progress=$6, updated_at=NOW() WHERE id=$7 RETURNING *`,
+      [name, status, assignee_name || '', priority, due_date || '', progress ?? 0, req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Task not found' });
+    res.json(dbTaskToFE(result.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/tasks/:id', auth, async (req, res) => {
+  try {
+    await query('DELETE FROM tasks WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Helpers ───────────────────────────────────────────────────────
+function dbProjectToFE(p, tasks) {
+  return {
+    id: String(p.id),
+    name: p.name,
+    ini: p.initiative || '',
+    rgn: p.region || 'na',
+    st: p.status || 'On Track',
+    sg: p.stage || 0,
+    owner: p.owner_name || '',
+    due: p.due_date || '',
+    color: p.color || '#4C8EE8',
+    desc: p.description || '',
+    tasks: tasks !== null ? (tasks || []) : undefined,
+  };
+}
+
+function dbTaskToFE(t) {
+  return {
+    id: String(t.id),
+    n: t.name,
+    s: t.status,
+    a: t.assignee_name || '',
+    p: t.priority,
+    d: t.due_date || '',
+    pct: t.progress || 0,
+  };
+}
+
+module.exports = router;

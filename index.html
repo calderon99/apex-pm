@@ -521,6 +521,10 @@ body {
 /* ── TOAST ─────────────────────── */
 #toast { position: fixed; bottom: 22px; right: 22px; background: var(--s2); border: 1px solid var(--line2); border-radius: 10px; padding: 9px 15px; font-size: 12.5px; color: var(--t1); opacity: 0; transform: translateY(8px); transition: all 0.22s; z-index: 9999; pointer-events: none; max-width: 280px; }
 #toast.on { opacity: 1; transform: translateY(0); }
+/* ── COLOR SWATCHES ────────────── */
+.color-swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s; flex-shrink: 0; }
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.sel { border-color: #fff; }
 </style>
 </head>
 <body>
@@ -536,7 +540,18 @@ body {
   </div>
   <div class="top-right">
     <button class="ai-btn" id="ai-toggle" onclick="toggleAI()"><div class="ai-dot"></div>Apex AI</button>
-    <div class="avatar">AO</div>
+    <div class="avatar" id="user-avatar" onclick="toggleUserMenu()" style="position:relative;cursor:pointer">??</div>
+  </div>
+  <!-- User dropdown -->
+  <div id="user-menu" style="display:none;position:fixed;top:46px;right:12px;background:var(--s2);border:1px solid var(--line2);border-radius:10px;min-width:200px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden">
+    <div style="padding:12px 14px;border-bottom:1px solid var(--line)">
+      <div id="um-name" style="font-size:13px;font-weight:600;color:var(--t1)"></div>
+      <div id="um-email" style="font-size:11px;color:var(--t3);margin-top:2px"></div>
+    </div>
+    <div style="padding:6px">
+      <div onclick="openSettings()" style="padding:8px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--t2)" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background=''">Profile &amp; Settings</div>
+      <div onclick="location.href='/auth/logout'" style="padding:8px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--t2)" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background=''">Sign out</div>
+    </div>
   </div>
 </div>
 
@@ -766,8 +781,72 @@ body {
 <input type="file" id="fi-input" accept=".csv,.xlsx,.xls,.tsv" style="display:none" onchange="handleFile(this)">
 <div id="toast"></div>
 
+<!-- PROFILE SETUP MODAL (first login) -->
+<div class="ov" id="m-setup">
+  <div class="modal" style="width:500px">
+    <div class="mh">
+      <div>
+        <div class="mt">Welcome to Apex</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Set up your profile to get started</div>
+      </div>
+    </div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Display Name</label><input class="fi" id="su-name" placeholder="Your name"></div>
+      <div class="fg"><label class="fl">Job Title</label><input class="fi" id="su-title" placeholder="e.g. Product Manager, Engineer…"></div>
+      <div class="fg"><label class="fl">Bio <span style="font-weight:400;color:var(--t3)">(optional)</span></label><textarea class="fta" id="su-bio" placeholder="Brief intro…"></textarea></div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="saveProfile(true)">Skip for now</button><button class="btn btn-primary" onclick="saveProfile(false)">Save &amp; Continue</button></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="ov" id="m-settings">
+  <div class="modal" style="width:480px">
+    <div class="mh"><div class="mt">Settings</div><button class="mc" onclick="closeModal('m-settings')">✕</button></div>
+    <div class="mb" style="gap:0;padding:0">
+      <!-- Tabs -->
+      <div style="display:flex;border-bottom:1px solid var(--line);padding:0 20px">
+        <button class="tab on" id="stab-profile" onclick="sTab('profile',this)" style="padding:12px 16px">Profile</button>
+        <button class="tab" id="stab-appear" onclick="sTab('appear',this)" style="padding:12px 16px">Appearance</button>
+      </div>
+      <!-- Profile tab -->
+      <div id="s-profile" style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px">
+          <div id="s-avatar" style="width:50px;height:50px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--blue)"></div>
+          <div><div id="s-email-lbl" style="font-size:12px;color:var(--t3)"></div></div>
+        </div>
+        <div class="fg"><label class="fl">Display Name</label><input class="fi" id="s-name" placeholder="Your name"></div>
+        <div class="fg"><label class="fl">Job Title</label><input class="fi" id="s-title" placeholder="e.g. Product Manager"></div>
+        <div class="fg"><label class="fl">Bio</label><textarea class="fta" id="s-bio" placeholder="Brief intro…" style="min-height:60px"></textarea></div>
+      </div>
+      <!-- Appearance tab -->
+      <div id="s-appear" style="display:none;padding:18px 20px;flex-direction:column;gap:18px">
+        <div class="fg">
+          <label class="fl">Accent Color</label>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <div class="color-swatch" data-color="#4C8EE8" style="background:#4C8EE8" onclick="pickColor(this)"></div>
+            <div class="color-swatch" data-color="#34C77B" style="background:#34C77B" onclick="pickColor(this)"></div>
+            <div class="color-swatch" data-color="#6478C8" style="background:#6478C8" onclick="pickColor(this)"></div>
+            <div class="color-swatch" data-color="#E09B3A" style="background:#E09B3A" onclick="pickColor(this)"></div>
+            <div class="color-swatch" data-color="#14b8a6" style="background:#14b8a6" onclick="pickColor(this)"></div>
+            <div class="color-swatch" data-color="#E05555" style="background:#E05555" onclick="pickColor(this)"></div>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">Density</label>
+          <select class="fsl" id="s-density" style="margin-top:4px">
+            <option value="comfortable">Comfortable</option>
+            <option value="compact">Compact</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-settings')">Cancel</button><button class="btn btn-primary" onclick="saveSettings()">Save</button></div>
+  </div>
+</div>
+
 <script>
-// ═══════════ DATA ═══════════════════════════
+// ═══════════ CONSTANTS ══════════════════════
 const AC = ['#4C8EE8','#34C77B','#E09B3A','#6478C8','#E05555','#14b8a6'];
 const aC = n => AC[(n||'?').charCodeAt(0) % AC.length];
 const aI = n => (n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
@@ -775,46 +854,142 @@ const STAGES = ['Initiate','Plan','Execute','Review','Close'];
 const STATUSES = ['Not Started','In Progress','Blocked','Complete'];
 const PRIORITIES = ['Low','Medium','High','Critical'];
 
-let D = {
-  projects: [
-    {id:'crm',name:'CRM Overhaul',       ini:'GTM Acceleration',      rgn:'na',  st:'On Track', sg:3,owner:'Sarah K.',    due:'Jun 30',color:'#34C77B',desc:'Replace legacy CRM with AI enrichment.',tasks:[]},
-    {id:'dat',name:'Data Platform v2',   ini:'Platform Modernization', rgn:'na',  st:'On Track', sg:2,owner:'Alejandro O.',due:'Jul 15',color:'#4C8EE8',desc:'Rebuild pipeline on cloud-native arch.',tasks:[]},
-    {id:'mob',name:'Mobile App Launch',  ini:'Customer Experience',    rgn:'na',  st:'At Risk',  sg:1,owner:'James T.',   due:'May 31',color:'#E09B3A',desc:'Consumer iOS and Android app.',tasks:[]},
-    {id:'sec',name:'Security Audit',     ini:'Ops Excellence',         rgn:'emea',st:'Off Track', sg:0,owner:'Maria C.',   due:'Apr 30',color:'#E05555',desc:'SOC2 Type II and pen testing.',tasks:[]},
-    {id:'prt',name:'Partner Portal',     ini:'GTM Acceleration',       rgn:'apac',st:'On Track', sg:2,owner:'Alejandro O.',due:'Aug 1', color:'#6478C8',desc:'Self-service partner portal.',tasks:[]},
-    {id:'an', name:'Analytics Dashboard',ini:'Platform Modernization', rgn:'na',  st:'On Track', sg:1,owner:'Priya S.',   due:'Sep 1', color:'#4C8EE8',desc:'Executive analytics suite.',tasks:[]},
-    {id:'onb',name:'Onboarding Revamp',  ini:'Customer Experience',    rgn:'emea',st:'At Risk',  sg:2,owner:'James T.',   due:'Jun 15',color:'#E09B3A',desc:'End-to-end onboarding redesign.',tasks:[]},
-  ],
-  cur: null, aiH: [], customField: null, importRows: null, fromView: 'projects',
-};
+let D = { projects: [], cur: null, aiH: [], customField: null, importRows: null, fromView: 'projects', user: null };
 
-const SEED = {
-  crm:[{n:'Salesforce migration', s:'Complete',  a:'Sarah K.',    p:'High',    d:'May 10',pct:100},
-       {n:'Custom object mapping',s:'In Progress',a:'Alejandro O.',p:'High',   d:'May 20',pct:65},
-       {n:'AI enrichment',        s:'In Progress',a:'Dev Team',   p:'Medium',  d:'Jun 1', pct:40},
-       {n:'UAT with sales',       s:'Not Started',a:'Sarah K.',   p:'Medium',  d:'Jun 15',pct:0}],
-  dat:[{n:'Architecture doc',     s:'Complete',  a:'Priya S.',   p:'Critical', d:'Apr 1', pct:100},
-       {n:'Kafka migration',      s:'In Progress',a:'Dev Team',  p:'High',     d:'May 28',pct:55},
-       {n:'Snowflake integration',s:'Not Started',a:'Alejandro O.',p:'High',   d:'Jun 10',pct:0}],
-  mob:[{n:'UX wireframes',        s:'Complete',  a:'Design',     p:'High',     d:'Apr 5', pct:100},
-       {n:'iOS development',      s:'In Progress',a:'Dev Team',  p:'Critical', d:'May 25',pct:42},
-       {n:'Android development',  s:'Blocked',   a:'Dev Team',   p:'Critical', d:'May 25',pct:30},
-       {n:'App Store submission', s:'Not Started',a:'James T.',  p:'High',     d:'May 28',pct:0}],
-  sec:[{n:'Pen test kickoff',     s:'In Progress',a:'Maria C.',  p:'Critical', d:'Apr 20',pct:20},
-       {n:'SOC2 evidence',        s:'Not Started',a:'Ops Team',  p:'High',     d:'Apr 25',pct:0}],
-  prt:[{n:'Requirements doc',    s:'Complete',  a:'Alejandro O.',p:'High',    d:'Apr 10',pct:100},
-       {n:'Design system',       s:'In Progress',a:'Design',    p:'Medium',   d:'May 15',pct:70},
-       {n:'SSO integration',     s:'Not Started',a:'Dev Team',  p:'High',     d:'Jun 1', pct:0}],
-  an: [{n:'Dashboard wireframes', s:'Complete',  a:'Design',     p:'High',    d:'Apr 20',pct:100},
-       {n:'Backend API layer',   s:'In Progress',a:'Dev Team',  p:'High',     d:'Jun 1', pct:35}],
-  onb:[{n:'Journey mapping',      s:'Complete',  a:'James T.',  p:'High',     d:'Apr 12',pct:100},
-       {n:'New flow build',       s:'In Progress',a:'Dev Team', p:'High',     d:'May 30',pct:60},
-       {n:'Content migration',   s:'Blocked',    a:'Ops Team',  p:'Medium',   d:'Jun 1', pct:25}],
-};
-Object.entries(SEED).forEach(([id,ts]) => {
-  const p = D.projects.find(p => p.id===id);
-  if (p) p.tasks = ts.map((t,i) => ({...t, id: id+i}));
+// ═══════════ API HELPER ══════════════════════
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || r.statusText);
+  return d;
+}
+
+// ═══════════ APP INIT ════════════════════════
+async function initApp() {
+  try {
+    const me = await api('/api/me');
+    D.user = me;
+    updateUserUI(me);
+    applyUserSettings(me.settings || {});
+    const data = await api('/api/projects');
+    D.projects = data.projects || [];
+    if (!me.is_profile_complete) {
+      document.getElementById('su-name').value = me.name || '';
+      openModal('m-setup');
+    } else {
+      nav('portfolio');
+    }
+  } catch (err) {
+    console.error('Init failed', err);
+    nav('portfolio');
+  }
+}
+
+function updateUserUI(u) {
+  const initials = aI(u.name || u.email);
+  const av = document.getElementById('user-avatar');
+  if (av) av.textContent = initials;
+  const uname = document.getElementById('um-name');
+  const uemail = document.getElementById('um-email');
+  if (uname) uname.textContent = u.name || '';
+  if (uemail) uemail.textContent = u.email || '';
+  const aiGreet = document.querySelector('#ai-msgs .m-apex .who');
+  const aiMsg = document.querySelector('#ai-msgs .m-apex');
+  if (aiMsg) aiMsg.innerHTML = `<div class="who">Apex AI</div>Hi ${(u.name||'').split(' ')[0] || 'there'} — I have full context on your portfolio. Ask me anything or tell me what to do.`;
+}
+
+function applyUserSettings(settings) {
+  if (settings.accentColor) {
+    document.documentElement.style.setProperty('--blue', settings.accentColor);
+  }
+  if (settings.density === 'compact') {
+    document.documentElement.style.setProperty('--row-pad', '6px 14px');
+  }
+}
+
+// ═══════════ USER MENU ═══════════════════════
+function toggleUserMenu() {
+  const m = document.getElementById('user-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#user-avatar') && !e.target.closest('#user-menu')) {
+    const m = document.getElementById('user-menu');
+    if (m) m.style.display = 'none';
+  }
 });
+
+// ═══════════ PROFILE & SETTINGS ══════════════
+async function saveProfile(skip) {
+  const name = document.getElementById('su-name').value.trim() || D.user?.name;
+  const job_title = document.getElementById('su-title').value.trim();
+  const bio = document.getElementById('su-bio').value.trim();
+  try {
+    const u = await api('/api/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name, job_title, bio, settings: D.user?.settings || {} })
+    });
+    D.user = { ...D.user, ...u };
+    updateUserUI(D.user);
+    closeModal('m-setup');
+    nav('portfolio');
+  } catch (err) {
+    toast('Error saving profile');
+  }
+}
+
+function openSettings() {
+  document.getElementById('user-menu').style.display = 'none';
+  const u = D.user || {};
+  document.getElementById('s-name').value = u.name || '';
+  document.getElementById('s-title').value = u.job_title || '';
+  document.getElementById('s-bio').value = u.bio || '';
+  document.getElementById('s-avatar').textContent = aI(u.name || u.email || '');
+  document.getElementById('s-email-lbl').textContent = u.email || '';
+  const density = document.getElementById('s-density');
+  if (density) density.value = u.settings?.density || 'comfortable';
+  const cur = u.settings?.accentColor || '#4C8EE8';
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.classList.toggle('sel', sw.dataset.color === cur);
+  });
+  sTab('profile', document.getElementById('stab-profile'));
+  openModal('m-settings');
+}
+
+function sTab(tab, btn) {
+  document.querySelectorAll('#m-settings .tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('s-profile').style.display = tab === 'profile' ? 'flex' : 'none';
+  document.getElementById('s-appear').style.display = tab === 'appear' ? 'flex' : 'none';
+}
+
+function pickColor(el) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+async function saveSettings() {
+  const name = document.getElementById('s-name').value.trim();
+  const job_title = document.getElementById('s-title').value.trim();
+  const bio = document.getElementById('s-bio').value.trim();
+  const sel = document.querySelector('.color-swatch.sel');
+  const accentColor = sel ? sel.dataset.color : (D.user?.settings?.accentColor || '#4C8EE8');
+  const density = document.getElementById('s-density').value;
+  const settings = { ...D.user?.settings, accentColor, density };
+  try {
+    const u = await api('/api/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name: name || D.user?.name, job_title, bio, settings })
+    });
+    D.user = { ...D.user, ...u };
+    updateUserUI(D.user);
+    applyUserSettings(settings);
+    closeModal('m-settings');
+    toast('Settings saved');
+  } catch (err) {
+    toast('Error saving settings');
+  }
+}
 
 // ═══════════ ROLLUPS ════════════════════════
 const rP = p => {
@@ -1021,7 +1196,14 @@ function renderPD(tab) {
 }
 function pdTab(tab,btn) { document.querySelectorAll('#v-pd .tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderPD(tab); }
 function activePDTab() { const i=[...document.querySelectorAll('#v-pd .tab')].findIndex(b=>b.classList.contains('on'));return['tasks','sheet','info'][i]||'tasks'; }
-function advS(i) { const p=D.cur; if(i===p.sg&&p.sg<STAGES.length-1){p.sg++;renderPD(activePDTab());toast('Stage → '+STAGES[p.sg]);} }
+async function advS(i) {
+  const p=D.cur;
+  if(i===p.sg&&p.sg<STAGES.length-1){
+    p.sg++;renderPD(activePDTab());toast('Stage → '+STAGES[p.sg]);
+    try { await api(`/api/projects/${p.id}`,{method:'PUT',body:JSON.stringify({name:p.name,initiative:p.ini,region:p.rgn,status:p.st,stage:p.sg,owner:p.owner,due_date:p.due,color:p.color,description:p.desc})}); }
+    catch(e){ console.error('Stage save error',e); }
+  }
+}
 
 function renderPDTasks() {
   const p = D.cur; const pr = rP(p); const cf = D.customField;
@@ -1066,7 +1248,7 @@ function renderPDSheet() {
   el.style.cssText = 'flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0';
   const wrap = document.createElement('div'); wrap.className='sw';
   const tb = document.createElement('div'); tb.className='stb';
-  [['+ Row',()=>addRow()],['+ 5 Rows',()=>addRows(5)],['✕ Del',()=>delRows()],null,['↑ Import',()=>document.getElementById('fi-input').click()],['↓ CSV',()=>exportCSV()],null,['Save',()=>{syncGrid();toast('Saved');}]].forEach(item=>{
+  [['+ Row',()=>addRow()],['+ 5 Rows',()=>addRows(5)],['✕ Del',()=>delRows()],null,['↑ Import',()=>document.getElementById('fi-input').click()],['↓ CSV',()=>exportCSV()],null,['Save',()=>saveSheet()]].forEach(item=>{
     if(!item){const s=document.createElement('div');s.className='tsep';tb.appendChild(s);return;}
     const [lbl,fn]=item; const b=document.createElement('button');b.className='tbb'+(lbl==='Save'?' hi':'');b.textContent=lbl;b.onclick=fn;tb.appendChild(b);
   });
@@ -1102,6 +1284,27 @@ function sortCol(k){if(!D.cur)return;D.cur.tasks.sort((a,b)=>String(a[k]||'').lo
 function syncGrid(){const p=D.cur;if(!p)return;p.tasks=[];document.querySelectorAll('#gtbody tr').forEach(tr=>{const cells=[...tr.querySelectorAll('td:not(.rn)')];const t={id:tr.dataset.id};COLS.forEach((c,ci)=>{const inp=cells[ci]?.querySelector('input,select');if(inp)t[c.k]=c.type==='num'?Math.min(100,Math.max(0,parseInt(inp.value)||0)):inp.value||'';});if(t.n)p.tasks.push(t);});}
 function exportCSV(){const p=D.cur;if(!p)return;syncGrid();const hdr=COLS.map(c=>c.label).join(',');const rows=p.tasks.map(t=>COLS.map(c=>`"${String(t[c.k]||'').replace(/"/g,'""')}"`).join(','));const blob=new Blob([[hdr,...rows].join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${(p.name||'tasks').replace(/\s+/g,'_')}.csv`;a.click();URL.revokeObjectURL(a.href);toast('Exported');}
 
+async function saveSheet(){
+  const p=D.cur;if(!p)return;
+  syncGrid();
+  try {
+    const updated=[];
+    for(const t of p.tasks){
+      if(!t.n)continue;
+      const isNew=isNaN(parseInt(t.id));
+      if(isNew){
+        const saved=await api(`/api/projects/${p.id}/tasks`,{method:'POST',body:JSON.stringify({name:t.n,status:t.s,assignee_name:t.a,priority:t.p,due_date:t.d,progress:t.pct})});
+        updated.push(saved);
+      }else{
+        const saved=await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({name:t.n,status:t.s,assignee_name:t.a,priority:t.p,due_date:t.d,progress:t.pct})});
+        updated.push(saved);
+      }
+    }
+    p.tasks=updated;
+    toast('Saved');
+  } catch(err){ toast('Save error: '+err.message); }
+}
+
 function renderPDInfo(){const p=D.cur;const pr=rP(p);document.getElementById('pd-body').innerHTML=`<div style="flex:1;overflow-y:auto;padding:18px 24px 28px"><div class="tbl-wrap" style="margin-bottom:12px"><table class="tbl"><tbody>${[['Initiative',p.ini],['Owner',p.owner],['Status',chip(p.st)],['Due',p.due],['Stage',STAGES[p.sg]]].map(([k,v])=>`<tr><td style="color:var(--t2);width:120px">${k}</td><td>${v}</td></tr>`).join('')}</tbody></table></div><div style="font-size:13.5px;color:var(--t2);line-height:1.65;margin-bottom:18px">${p.desc}</div><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);margin-bottom:6px"><span>Progress</span><span>${pr.pct}%</span></div>${pbar(pr.pct,5)}</div>`;}
 
 // ═══════════ TASKS ══════════════════════════
@@ -1112,7 +1315,7 @@ function clearAIFilter(){tkFilters={};const bar=document.getElementById('ai-filt
 function renderTK(f){
   if(f)tkActive=f;
   const all=D.projects.flatMap(p=>(p.tasks||[]).map(t=>({...t,proj:p.name,pid:p.id,color:p.color})));
-  let ts=all;if(tkActive==='mine')ts=all.filter(t=>['Alejandro O.','Dev Team'].includes(t.a));if(tkActive==='blocked')ts=all.filter(t=>t.s==='Blocked');
+  let ts=all;if(tkActive==='mine'){const me=D.user?.name||'';ts=all.filter(t=>me&&t.a.toLowerCase().includes(me.split(' ')[0].toLowerCase()));}if(tkActive==='blocked')ts=all.filter(t=>t.s==='Blocked');
   const hasF=Object.values(tkFilters).some(v=>v);
   if(tkFilters.assignee)ts=ts.filter(t=>t.a.toLowerCase().includes(tkFilters.assignee.toLowerCase()));
   if(tkFilters.status)ts=ts.filter(t=>t.s===tkFilters.status);
@@ -1227,13 +1430,30 @@ function exportReport(){
 }
 
 // ═══════════ RESOURCES ══════════════════════
-const TEAM=[{n:'Alejandro O.',role:'Sr. Solutions Eng.'},{n:'Sarah K.',role:'CRM PM'},{n:'Priya S.',role:'Platform Architect'},{n:'James T.',role:'Mobile Lead'},{n:'Maria C.',role:'Ops & Security'},{n:'Dev Team',role:'Engineering'},{n:'Design',role:'UX/UI'},{n:'Ops Team',role:'Operations'}];
 function renderRS(){
-  const all=D.projects.flatMap(p=>p.tasks||[]);const over=TEAM.filter(r=>all.filter(t=>t.a===r.n&&t.s!=='Complete').length>3).length;
-  let html=`<div class="pad"><div class="stats s3" style="margin-bottom:18px"><div class="sc"><div class="sv">${TEAM.length}</div><div class="sl">Members</div></div><div class="sc"><div class="sv ${over?'a':''}">${over}</div><div class="sl">Over Cap.</div></div><div class="sc"><div class="sv">${all.filter(t=>t.s!=='Complete').length}</div><div class="sl">Open Tasks</div></div></div>
-  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Member</th><th>Role</th><th>Open Tasks</th><th>Load</th></tr></thead><tbody>`;
-  TEAM.forEach(r=>{const open=all.filter(t=>t.a===r.n&&t.s!=='Complete');const ld=Math.min(100,Math.round(open.length/4*100));const lc=ld>80?'var(--red)':ld>60?'var(--amber)':'var(--green)';html+=`<tr><td>${ach(r.n)}</td><td class="cm">${r.role}</td><td class="cm">${open.length}</td><td style="min-width:120px"><div class="ibar"><div class="tr"><div class="pf" style="width:${ld}%;background:${lc};height:100%;border-radius:2px"></div></div><div class="pct">${ld}%</div></div></td></tr>`;});
-  html+=`</tbody></table></div></div>`;
+  const all=D.projects.flatMap(p=>p.tasks||[]);
+  // Build unique assignee list from real tasks
+  const names=new Set();
+  all.forEach(t=>{if(t.a&&t.a.trim())names.add(t.a.trim());});
+  // Always include current user
+  if(D.user?.name)names.add(D.user.name);
+  const TEAM=[...names].sort().map(n=>({n}));
+  const over=TEAM.filter(r=>all.filter(t=>t.a===r.n&&t.s!=='Complete').length>3).length;
+  let html=`<div class="pad"><div class="stats s3" style="margin-bottom:18px"><div class="sc"><div class="sv">${TEAM.length||0}</div><div class="sl">People</div></div><div class="sc"><div class="sv ${over?'a':''}">${over}</div><div class="sl">Over Cap.</div></div><div class="sc"><div class="sv">${all.filter(t=>t.s!=='Complete').length}</div><div class="sl">Open Tasks</div></div></div>`;
+  if(TEAM.length){
+    html+=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Member</th><th>Open Tasks</th><th>Projects</th><th>Load</th></tr></thead><tbody>`;
+    TEAM.forEach(r=>{
+      const open=all.filter(t=>t.a===r.n&&t.s!=='Complete');
+      const projs=[...new Set(open.map(t=>D.projects.find(p=>p.tasks?.some(x=>x===t))?.name).filter(Boolean))];
+      const ld=Math.min(100,Math.round(open.length/4*100));
+      const lc=ld>80?'var(--red)':ld>60?'var(--amber)':'var(--green)';
+      html+=`<tr><td>${ach(r.n)}</td><td class="cm">${open.length}</td><td class="cm" style="font-size:11px">${projs.join(', ')||'—'}</td><td style="min-width:120px"><div class="ibar"><div class="tr"><div class="pf" style="width:${ld}%;background:${lc};height:100%;border-radius:2px"></div></div><div class="pct">${ld}%</div></div></td></tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  }else{
+    html+=`<div style="text-align:center;color:var(--t3);padding:40px;font-size:13px">Add tasks with assignees to see workload here.</div>`;
+  }
+  html+=`</div>`;
   document.getElementById('rs-body').innerHTML=html;
 }
 
@@ -1277,16 +1497,47 @@ function parseXLSX(buf){
 function openModal(id){document.getElementById(id).classList.add('on');}
 function closeModal(id){document.getElementById(id).classList.remove('on');}
 document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
-function createProj(){
+async function createProj(){
   const n=document.getElementById('np-n').value.trim();if(!n){toast('Enter a name');return;}
-  const p={id:'p'+Date.now(),name:n,ini:document.getElementById('np-i').value,rgn:'na',st:document.getElementById('np-s').value,sg:0,owner:document.getElementById('np-o').value||'Unassigned',due:document.getElementById('np-d').value||'TBD',color:'#4C8EE8',desc:document.getElementById('np-desc').value||'',tasks:[]};
-  D.projects.push(p);closeModal('m-proj');toast(`"${n}" created`);renderPF();renderPJ();buildSB(curView);
+  try {
+    const p = await api('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: n, initiative: document.getElementById('np-i').value,
+        region: 'na', status: document.getElementById('np-s').value,
+        owner: document.getElementById('np-o').value || D.user?.name || '',
+        due_date: document.getElementById('np-d').value || '',
+        color: '#4C8EE8', description: document.getElementById('np-desc').value || ''
+      })
+    });
+    D.projects.push(p);
+    closeModal('m-proj');
+    document.getElementById('np-n').value='';
+    document.getElementById('np-desc').value='';
+    toast(`"${n}" created`);
+    renderPF(); renderPJ(); buildSB(curView);
+  } catch(err) { toast('Error: '+err.message); }
 }
-function saveTask(){
+async function saveTask(){
   const n=document.getElementById('nt-n').value.trim();if(!n){toast('Enter a task name');return;}
   const pid=document.getElementById('nt-p').value;const p=D.projects.find(p=>p.id===pid);if(!p)return;
-  p.tasks.push({id:'t'+Date.now(),n,s:document.getElementById('nt-s').value,a:document.getElementById('nt-a').value||'Unassigned',p:document.getElementById('nt-pr').value,d:document.getElementById('nt-d').value||'TBD',pct:0});
-  closeModal('m-task');toast('Task added');if(D.cur?.id===pid)renderPD(activePDTab());renderTK(tkActive);
+  try {
+    const t = await api(`/api/projects/${pid}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: n, status: document.getElementById('nt-s').value,
+        assignee_name: document.getElementById('nt-a').value || '',
+        priority: document.getElementById('nt-pr').value,
+        due_date: document.getElementById('nt-d').value || '', progress: 0
+      })
+    });
+    p.tasks.push(t);
+    closeModal('m-task');
+    document.getElementById('nt-n').value='';
+    toast('Task added');
+    if(D.cur?.id===pid)renderPD(activePDTab());
+    renderTK(tkActive);
+  } catch(err) { toast('Error: '+err.message); }
 }
 function saveCF(){
   const n=document.getElementById('cf-n').value.trim();if(!n)return;const p=D.cur;if(!p)return;
@@ -1359,7 +1610,7 @@ Rules:
 // ═══════════ INIT ════════════════════════════
 // Hook task modal open to pre-populate project list
 document.querySelectorAll('[onclick="openModal(\'m-task\')"]').forEach(el => { el.onclick = openTaskModal; });
-nav('portfolio');
+initApp();
 </script>
 </body>
 </html>

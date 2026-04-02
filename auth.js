@@ -98,16 +98,9 @@ function setupAuth(app, sessionMiddleware) {
     req.logout(() => res.redirect('/login'));
   });
 
-  // ── Current user API ──────────────────────────────────────
-  app.get('/api/me', (req, res) => {
-    if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-    const { id, name, email, avatar_url } = req.user;
-    res.json({ id, name, email, avatar_url });
-  });
-
   // ── Auth guard middleware ─────────────────────────────────
   app.use((req, res, next) => {
-    const open = ['/login', '/auth/', '/api/me'];
+    const open = ['/login', '/auth/', '/api/'];
     if (open.some(p => req.path.startsWith(p))) return next();
     if (req.user) return next();
     if (req.path === '/') return res.sendFile(__dirname + '/login.html');

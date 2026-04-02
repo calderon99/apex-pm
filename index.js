@@ -4,6 +4,7 @@ const PgSession = require('connect-pg-simple')(session);
 const path = require('path');
 const { pool } = require('./db');
 const { setupAuth } = require('./auth');
+const apiRoutes = require('./routes/api');
 
 const app = express();
 app.use(express.json());
@@ -28,6 +29,9 @@ if (!process.env.APP_URL) {
 
 // ── Auth (Google OAuth + guards) ─────────────────────────
 setupAuth(app, sessionMiddleware);
+
+// ── API routes ────────────────────────────────────────────
+app.use('/api', apiRoutes);
 
 // ── Static files (served after auth guard) ────────────────
 app.use(express.static(path.join(__dirname), {
