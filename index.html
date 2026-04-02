@@ -1172,7 +1172,19 @@ async function sendAI(){
   inp.value='';document.getElementById('ai-snd').disabled=true;
   if(!aiOpen)toggleAI();addAM('user',msg);addThink();
   const r=rAll(D.projects);
-  const ctx=`You are Apex AI inside Apex, a project management platform. User: Alejandro Ochoa. Portfolio: ${D.projects.map(p=>{const pr=rP(p);return`${p.name}[${p.ini}] ${p.st} ${pr.pct}% ${pr.done}/${pr.total}t ${pr.blocked}blk`;}).join(' | ')} — ${r.total} projects ${r.onTrack} on-track ${r.atRisk} at-risk ${r.pct}% avg. Reply 2-4 sentences, plain text.`;
+  const ctx=`You are Apex AI inside Apex, a project management platform. The user is Alejandro Ochoa (AO). You have full read access to all portfolio, project, and task data below. Use it to answer precisely — never say you lack access to task or assignee data.
+
+PORTFOLIO SUMMARY
+${r.total} projects | ${r.onTrack} on-track | ${r.atRisk} at-risk | ${r.offTrack} off-track | ${r.pct}% avg progress | ${r.totalTasks} tasks | ${r.done} complete | ${r.blocked} blocked
+
+PROJECTS & TASKS
+${D.projects.map(p=>{const pr=rP(p);return`Project: ${p.name}
+  Initiative: ${p.ini} | Region: ${p.rgn} | Status: ${p.st} | Owner: ${p.owner} | Due: ${p.due} | Progress: ${pr.pct}% (${pr.done}/${pr.total} tasks done, ${pr.blocked} blocked, ${pr.inprog} in progress)
+  Description: ${p.desc}
+  Tasks:
+${(p.tasks||[]).map(t=>`    - [${t.s}] ${t.n} | Assignee: ${t.a} | Priority: ${t.p} | Due: ${t.d} | Progress: ${t.pct}%${t.subtasks&&t.subtasks.length?`\n      Subtasks:\n${t.subtasks.map(st=>`        · [${st.s}] ${st.n} | ${st.a} | ${st.pct}%`).join('\n')}`:''}${t.cfv?` | ${D.customField?.n||'Custom'}: ${t.cfv}`:''}`).join('\n')||'    (no tasks)'}`;}).join('\n\n')}
+
+Reply in plain text. Be specific — reference real project names, task names, assignees, dates, and percentages from the data above.`;
   try{
     const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:ctx,messages:[...D.aiH,{role:'user',content:msg}]})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Error.';
