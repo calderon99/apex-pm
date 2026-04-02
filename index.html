@@ -1174,7 +1174,7 @@ async function sendAI(){
   const r=rAll(D.projects);
   const ctx=`You are Apex AI inside Apex, a project management platform. User: Alejandro Ochoa. Portfolio: ${D.projects.map(p=>{const pr=rP(p);return`${p.name}[${p.ini}] ${p.st} ${pr.pct}% ${pr.done}/${pr.total}t ${pr.blocked}blk`;}).join(' | ')} — ${r.total} projects ${r.onTrack} on-track ${r.atRisk} at-risk ${r.pct}% avg. Reply 2-4 sentences, plain text.`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:ctx,messages:[...D.aiH,{role:'user',content:msg}]})});
+    const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:ctx,messages:[...D.aiH,{role:'user',content:msg}]})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Error.';
     D.aiH.push({role:'user',content:msg},{role:'assistant',content:reply});rmThink();addAM('apex',reply);
     if(msg.toLowerCase().includes('duplicate')){const src=D.projects.find(p=>msg.toLowerCase().includes(p.name.toLowerCase()));if(src){D.projects.push({...src,id:src.id+'c',name:src.name+' (Copy)',tasks:src.tasks.map(t=>({...t,id:'c'+t.id})),sg:0});toast(`Duplicated "${src.name}"`);renderPF();renderPJ();}}

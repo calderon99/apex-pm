@@ -1,0 +1,62 @@
+The setup
+You need a tiny server that sits between your app and Anthropic. Your app sends the message to your Replit server, the server adds your secret API key and forwards it to Anthropic, then returns the response. Your key never touches the browser.
+Step by step
+
+Go to replit.com → Create Repl → choose Node.js
+Replace the contents of index.js with this:
+
+javascriptconst express = require('express');
+const app = express();
+app.use(express.json());
+
+// Allow your GitHub Pages domain to call this
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
+app.post('/chat', async (req, res) => {
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system: req.body.system,
+        messages: req.body.messages
+      })
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(3000, () => console.log('Apex proxy running'));
+
+In Replit's Secrets tab (the lock icon), add:
+
+Key: ANTHROPIC_API_KEY
+Value: your Anthropic API key
+
+
+Hit Run — Replit gives you a public URL like https://apex-proxy.yourusername.repl.co
+
+Then update one line in your HTML
+Find the sendAI function and change the fetch URL from:
+javascriptconst res = await fetch('https://api.anthropic.com/v1/messages', {
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ model: '...', max_tokens: 400, system: ctx, messages: [...] })
+to:
+javascriptconst res = await fetch('https://YOUR-REPLIT-URL.repl.co/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ system: ctx, messages: [...D.aiH, {role:'user',content:msg}] })
