@@ -854,7 +854,7 @@ const STAGES = ['Initiate','Plan','Execute','Review','Close'];
 const STATUSES = ['Not Started','In Progress','Blocked','Complete'];
 const PRIORITIES = ['Low','Medium','High','Critical'];
 
-let D = { projects: [], cur: null, aiH: [], customField: null, importRows: null, fromView: 'projects', user: null };
+let D = { projects: [], portfolios: [], cur: null, aiH: [], customField: null, importRows: null, fromView: 'projects', user: null };
 
 // ═══════════ API HELPER ══════════════════════
 async function api(path, opts = {}) {
@@ -873,6 +873,7 @@ async function initApp() {
     applyUserSettings(me.settings || {});
     const data = await api('/api/projects');
     D.projects = data.projects || [];
+    D.portfolios = data.portfolios || [];
     if (!me.is_profile_complete) {
       document.getElementById('su-name').value = me.name || '';
       openModal('m-setup');
@@ -1343,7 +1344,7 @@ function renderTK(f){
 function tkSeg(f,btn){document.querySelectorAll('#v-tasks .tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderTK(f);}
 
 // ═══════════ AI ACTIONS ═════════════════════
-function executeAIAction(action){
+async function executeAIAction(action){
   try{
     switch(action.type){
       case 'navigate':
@@ -1368,21 +1369,71 @@ function executeAIAction(action){
       case 'show_report':
         showAIReport(action);
         break;
+      case 'create_portfolio':{
+        const name=action.name?.trim();
+        if(!name){toast('Portfolio name required');break;}
+        try{
+          const port=await api('/api/portfolios',{method:'POST',body:JSON.stringify({name,description:action.description||''})});
+          D.portfolios.push(port);
+          toast(`Portfolio "${port.name}" created`);
+          nav('portfolio');renderPF();buildSB(curView);
+        }catch(e){toast('Error: '+e.message);}
+        break;}
+      case 'create_project':{
+        const name=action.name?.trim();
+        if(!name){toast('Project name required');break;}
+        try{
+          const p=await api('/api/projects',{method:'POST',body:JSON.stringify({
+            name,
+            initiative:action.initiative||'',
+            region:action.region||'na',
+            status:action.status||'On Track',
+            owner:action.owner||D.user?.name||'',
+            due_date:action.due||'',
+            color:action.color||'#4C8EE8',
+            description:action.description||'',
+            portfolio_name:action.portfolio||''
+          })});
+          D.projects.push(p);
+          toast(`Project "${p.name}" created`);
+          nav('projects');renderPF();renderPJ();buildSB(curView);
+        }catch(e){toast('Error: '+e.message);}
+        break;}
       case 'add_task':{
         const p=D.projects.find(p=>p.name.toLowerCase()===action.project?.toLowerCase());
-        if(p){
-          p.tasks.push({id:'t'+Date.now(),n:action.name||'New Task',s:action.status||'Not Started',a:action.assignee||'',p:action.priority||'Medium',d:action.due||'TBD',pct:action.pct||0});
-          toast(`Task added: "${action.name}" → ${p.name}`);
+        if(!p){toast('Project not found: '+action.project);break;}
+        try{
+          const t=await api(`/api/projects/${p.id}/tasks`,{method:'POST',body:JSON.stringify({
+            name:action.name||'New Task',
+            status:action.status||'Not Started',
+            assignee_name:action.assignee||'',
+            priority:action.priority||'Medium',
+            due_date:action.due||'',
+            progress:action.pct||0
+          })});
+          p.tasks.push(t);
+          toast(`Task added: "${t.n}" → ${p.name}`);
           if(curView==='tasks')renderTK(tkActive);
-        }else{toast('Project not found: '+action.project);}
+          if(D.cur?.id===p.id)renderPD(activePDTab());
+        }catch(e){toast('Error: '+e.message);}
         break;}
       case 'update_task':{
         let found=false;
-        D.projects.forEach(p=>{
-          if(action.project&&!p.name.toLowerCase().includes(action.project.toLowerCase()))return;
+        for(const p of D.projects){
+          if(action.project&&!p.name.toLowerCase().includes(action.project.toLowerCase()))continue;
           const t=p.tasks.find(t=>t.n.toLowerCase()===action.task?.toLowerCase());
-          if(t){found=true;if(action.status)t.s=action.status;if(action.pct!==undefined)t.pct=Number(action.pct);toast(`Updated: "${t.n}"`);}
-        });
+          if(t){
+            found=true;
+            const upd={};
+            if(action.status){upd.status=action.status;t.s=action.status;}
+            if(action.pct!==undefined){upd.progress=Number(action.pct);t.pct=Number(action.pct);}
+            try{
+              await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify(upd)});
+              toast(`Updated: "${t.n}"`);
+            }catch(e){toast('Error updating task: '+e.message);}
+            break;
+          }
+        }
         if(!found)toast('Task not found: '+action.task);
         if(curView==='tasks')renderTK(tkActive);
         break;}
@@ -1558,39 +1609,45 @@ async function sendAI(){
   inp.value='';document.getElementById('ai-snd').disabled=true;
   if(!aiOpen)toggleAI();addAM('user',msg);addThink();
   const r=rAll(D.projects);
-  const ctx=`You are Apex AI inside Apex, a project management platform. The user is Alejandro Ochoa (AO). You have full read access to all portfolio, project, and task data below. Use it to answer precisely — never say you lack access to task or assignee data.
+  const userName=D.user?.name||'the user';
+  const ctx=`You are Apex AI inside Apex, a project management platform. The user is ${userName}. You have full read/write access — you can create portfolios, projects, and tasks, and update tasks directly in the database.
+
+PORTFOLIOS (${D.portfolios.length})
+${D.portfolios.map(pt=>`• ${pt.name}${pt.description?' — '+pt.description:''}`).join('\n')||'(none yet)'}
 
 PORTFOLIO SUMMARY
 ${r.total} projects | ${r.onTrack} on-track | ${r.atRisk} at-risk | ${r.offTrack} off-track | ${r.pct}% avg progress | ${r.totalTasks} tasks | ${r.done} complete | ${r.blocked} blocked
 
 PROJECTS & TASKS
-${D.projects.map(p=>{const pr=rP(p);return`Project: ${p.name}
-  Initiative: ${p.ini} | Region: ${p.rgn} | Status: ${p.st} | Owner: ${p.owner} | Due: ${p.due} | Progress: ${pr.pct}% (${pr.done}/${pr.total} tasks done, ${pr.blocked} blocked, ${pr.inprog} in progress)
+${D.projects.map(p=>{const pr=rP(p);return`Project: ${p.name} [Portfolio: ${p.portfolio||'Default'}]
+  Initiative: ${p.ini} | Region: ${p.rgn} | Status: ${p.st} | Owner: ${p.owner} | Due: ${p.due} | Progress: ${pr.pct}% (${pr.done}/${pr.total} done, ${pr.blocked} blocked, ${pr.inprog} in-progress)
   Description: ${p.desc}
   Tasks:
-${(p.tasks||[]).map(t=>`    - [${t.s}] ${t.n} | Assignee: ${t.a} | Priority: ${t.p} | Due: ${t.d} | Progress: ${t.pct}%${t.subtasks&&t.subtasks.length?`\n      Subtasks:\n${t.subtasks.map(st=>`        · [${st.s}] ${st.n} | ${st.a} | ${st.pct}%`).join('\n')}`:''}${t.cfv?` | ${D.customField?.n||'Custom'}: ${t.cfv}`:''}`).join('\n')||'    (no tasks)'}`;}).join('\n\n')}
+${(p.tasks||[]).map(t=>`    - [${t.s}] ${t.n} | Assignee: ${t.a||'Unassigned'} | Priority: ${t.p} | Due: ${t.d} | Progress: ${t.pct}%`).join('\n')||'    (no tasks)'}`}).join('\n\n')}
 
-Reply in plain text. Be specific — reference real project names, task names, assignees, dates, and percentages from the data above.
+Reply in plain text. Reference exact names, percentages, and dates from the data above.
 
 ACTIONS
-When the user asks you to navigate, filter, show a report, add a task, or update data — embed one action block in your response using this exact format on its own line:
+You can create and update data by embedding action blocks. Each action is saved to the database immediately. Use this exact format on its own line:
 <APEX_ACTION>{"type":"...","key":"value"}</APEX_ACTION>
 
-Available actions (omit unused fields):
-- navigate: {"type":"navigate","view":"portfolio"|"projects"|"tasks"|"resources"}
-- filter_tasks: {"type":"filter_tasks","assignee":"name","status":"Complete|In Progress|Not Started|Blocked","priority":"Critical|High|Medium|Low","project":"exact project name","search":"keyword"}
-- filter_projects: {"type":"filter_projects","status":"On Track|At Risk|Off Track","initiative":"initiative name"}
-- show_report: {"type":"show_report","title":"Report Title","subtitle":"optional description","sections":[{"heading":"Section heading","rows":[{"label":"Row label","value":"Row value","note":"optional"}]}]}
-- add_task: {"type":"add_task","project":"exact project name","name":"task name","assignee":"name","priority":"Critical|High|Medium|Low","due":"Mon DD or TBD","status":"Not Started|In Progress|Blocked"}
-- update_task: {"type":"update_task","project":"project name","task":"exact task name","status":"Complete|In Progress|Not Started|Blocked","pct":0}
+You may include MULTIPLE action blocks in one response (e.g. to create a project then add several tasks).
+
+Available actions:
+- navigate:         {"type":"navigate","view":"portfolio"|"projects"|"tasks"|"resources"}
+- create_portfolio: {"type":"create_portfolio","name":"Portfolio Name","description":"optional"}
+- create_project:   {"type":"create_project","name":"Project Name","initiative":"initiative","status":"On Track|At Risk|Off Track","owner":"name","due":"YYYY-MM-DD","description":"optional","portfolio":"exact portfolio name (optional — defaults to first portfolio)","color":"#hex (optional)"}
+- add_task:         {"type":"add_task","project":"exact project name","name":"Task Name","assignee":"name","priority":"Critical|High|Medium|Low","due":"YYYY-MM-DD or TBD","status":"Not Started|In Progress|Blocked"}
+- update_task:      {"type":"update_task","project":"project name","task":"exact task name","status":"Complete|In Progress|Not Started|Blocked","pct":0-100}
+- filter_tasks:     {"type":"filter_tasks","assignee":"name","status":"Complete|In Progress|Not Started|Blocked","priority":"Critical|High|Medium|Low","project":"exact project name","search":"keyword"}
+- filter_projects:  {"type":"filter_projects","status":"On Track|At Risk|Off Track","initiative":"initiative name"}
+- show_report:      {"type":"show_report","title":"Title","subtitle":"optional","sections":[{"heading":"Heading","rows":[{"label":"Label","value":"Value","note":"optional"}]}]}
 
 Rules:
-- Always use exact names from the data above (spelling matters for add_task and update_task).
-- You can combine a brief text reply AND one action block in the same message.
-- Use filter_tasks to show tasks for a specific person, status, priority, or project.
-- Use show_report for summaries, analyses, or grouped views with labeled data rows.
-- Use navigate to take the user to a different view.
-- Only include an action block when the user is clearly requesting an action.`;
+- To create a project and add tasks to it: use create_project first, then multiple add_task blocks referencing the exact same project name.
+- Spelling in "project" and "task" fields must match exactly (for add_task, update_task).
+- You can include a brief plain-text reply before/after action blocks.
+- Only emit action blocks when the user clearly intends an action.`;
   try{
     const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:ctx,messages:[...D.aiH,{role:'user',content:msg}]})});
     const data=await res.json();const reply=data.content?.[0]?.text||'Error.';
@@ -1601,7 +1658,7 @@ Rules:
     D.aiH.push({role:'user',content:msg},{role:'assistant',content:reply});
     rmThink();
     if(displayText)addAM('apex',displayText);
-    actions.forEach(a=>executeAIAction(a));
+    for(const a of actions){await executeAIAction(a);}
     if(msg.toLowerCase().includes('duplicate')&&!actions.length){const src=D.projects.find(p=>msg.toLowerCase().includes(p.name.toLowerCase()));if(src){D.projects.push({...src,id:src.id+'c',name:src.name+' (Copy)',tasks:src.tasks.map(t=>({...t,id:'c'+t.id})),sg:0});toast(`Duplicated "${src.name}"`);renderPF();renderPJ();}}
   }catch(e){rmThink();addAM('apex','Connection issue.');}
   document.getElementById('ai-snd').disabled=false;

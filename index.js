@@ -62,7 +62,7 @@ app.post('/chat', async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
+        max_tokens: 1500,
         system: req.body.system,
         messages: req.body.messages
       })

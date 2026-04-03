@@ -31,18 +31,62 @@ router.put('/profile', auth, async (req, res) => {
   }
 });
 
+// ── Portfolios ────────────────────────────────────────────────────
+router.get('/portfolios', auth, async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT * FROM portfolios WHERE owner_id=$1 ORDER BY created_at ASC',
+      [req.user.id]
+    );
+    res.json({ portfolios: result.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '' })) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/portfolios', auth, async (req, res) => {
+  const { name, description } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name required' });
+  try {
+    const result = await query(
+      `INSERT INTO portfolios (owner_id, name, description) VALUES ($1,$2,$3) RETURNING *`,
+      [req.user.id, name, description || '']
+    );
+    const p = result.rows[0];
+    await query(
+      `INSERT INTO memberships (user_id, resource_type, resource_id, role) VALUES ($1,'portfolio',$2,'owner')`,
+      [req.user.id, p.id]
+    );
+    res.json({ id: String(p.id), name: p.name, description: p.description || '' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Projects ──────────────────────────────────────────────────────
 router.get('/projects', auth, async (req, res) => {
   try {
-    const port = await query('SELECT id FROM portfolios WHERE owner_id=$1 LIMIT 1', [req.user.id]);
-    if (!port.rows.length) return res.json({ projects: [] });
-    const portfolioId = port.rows[0].id;
-
-    const projects = await query(
-      'SELECT * FROM projects WHERE portfolio_id=$1 ORDER BY created_at ASC',
-      [portfolioId]
+    const portfolios = await query(
+      'SELECT * FROM portfolios WHERE owner_id=$1 ORDER BY created_at ASC',
+      [req.user.id]
     );
-    if (!projects.rows.length) return res.json({ projects: [] });
+    if (!portfolios.rows.length) return res.json({ projects: [], portfolios: [] });
+
+    const portfolioIds = portfolios.rows.map(p => p.id);
+    const projects = await query(
+      'SELECT * FROM projects WHERE portfolio_id = ANY($1) ORDER BY created_at ASC',
+      [portfolioIds]
+    );
+
+    const portMap = {};
+    portfolios.rows.forEach(p => { portMap[p.id] = p; });
+
+    if (!projects.rows.length) {
+      return res.json({
+        projects: [],
+        portfolios: portfolios.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '' }))
+      });
+    }
 
     const projectIds = projects.rows.map(p => p.id);
     const tasks = await query(
@@ -57,29 +101,54 @@ router.get('/projects', auth, async (req, res) => {
       tasksByProject[t.project_id].push(dbTaskToFE(t));
     });
 
-    const result = projects.rows.map(p => dbProjectToFE(p, tasksByProject[p.id] || []));
-    res.json({ projects: result });
+    const result = projects.rows.map(p => ({
+      ...dbProjectToFE(p, tasksByProject[p.id] || []),
+      portfolio_id: String(p.portfolio_id),
+      portfolio: portMap[p.portfolio_id]?.name || '',
+    }));
+
+    res.json({
+      projects: result,
+      portfolios: portfolios.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '' }))
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/projects', auth, async (req, res) => {
-  const { name, initiative, region, status, owner, due_date, color, description } = req.body;
+  const { name, initiative, region, status, owner, due_date, color, description, portfolio_id, portfolio_name } = req.body;
   try {
-    const port = await query('SELECT id FROM portfolios WHERE owner_id=$1 LIMIT 1', [req.user.id]);
-    if (!port.rows.length) return res.status(400).json({ error: 'No portfolio found' });
-    const portfolioId = port.rows[0].id;
+    let portId = portfolio_id;
+    if (!portId && portfolio_name) {
+      const found = await query(
+        'SELECT id FROM portfolios WHERE owner_id=$1 AND LOWER(name)=LOWER($2) LIMIT 1',
+        [req.user.id, portfolio_name]
+      );
+      if (found.rows.length) portId = found.rows[0].id;
+    }
+    if (!portId) {
+      const first = await query('SELECT id FROM portfolios WHERE owner_id=$1 ORDER BY created_at ASC LIMIT 1', [req.user.id]);
+      if (!first.rows.length) return res.status(400).json({ error: 'No portfolio found' });
+      portId = first.rows[0].id;
+    }
+
+    const portRow = await query('SELECT name FROM portfolios WHERE id=$1', [portId]);
 
     const result = await query(
       `INSERT INTO projects (portfolio_id, owner_id, name, initiative, region, status,
        stage, color, due_date, description, owner_name)
        VALUES ($1,$2,$3,$4,$5,$6,0,$7,$8,$9,$10) RETURNING *`,
-      [portfolioId, req.user.id, name, initiative || '', region || 'na',
+      [portId, req.user.id, name, initiative || '', region || 'na',
        status || 'On Track', color || '#4C8EE8', due_date || '', description || '',
        owner || req.user.name]
     );
-    res.json(dbProjectToFE(result.rows[0], []));
+    const p = result.rows[0];
+    res.json({
+      ...dbProjectToFE(p, []),
+      portfolio_id: String(p.portfolio_id),
+      portfolio: portRow.rows[0]?.name || '',
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
