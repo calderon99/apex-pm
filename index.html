@@ -621,7 +621,8 @@ body {
       </div>
       <div class="ph-actions">
         <span class="chip" id="pd-chip"></span>
-        <button class="btn btn-ghost" onclick="openModal('m-task')">+ Task</button>
+        <button class="btn btn-ghost" onclick="openProjectEdit()">Edit</button>
+        <button class="btn btn-ghost" onclick="openTaskModal()">+ Task</button>
         <button class="btn btn-ghost" onclick="openModal('m-cf')">+ Field</button>
       </div>
     </div>
@@ -775,6 +776,95 @@ body {
       <div class="fg"><label class="fl">Type</label><select class="fsl" id="cf-t"><option>Text</option><option>Number</option><option>Dropdown</option><option>Date</option><option>Checkbox</option></select></div>
     </div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-cf')">Cancel</button><button class="btn btn-primary" onclick="saveCF()">Add Field</button></div>
+  </div>
+</div>
+
+<!-- TASK EDIT MODAL -->
+<div class="ov" id="m-tedit">
+  <div class="modal" style="width:540px">
+    <div class="mh">
+      <div>
+        <div class="mt" id="te-title">Edit Task</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px" id="te-proj-lbl"></div>
+      </div>
+      <button class="mc" onclick="closeModal('m-tedit')">✕</button>
+    </div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Task Name</label><input class="fi" id="te-n" placeholder="Task name…"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Status</label>
+          <select class="fsl" id="te-s">
+            <option>Not Started</option><option>In Progress</option><option>Blocked</option><option>Complete</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Priority</label>
+          <select class="fsl" id="te-p">
+            <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr">
+        <div class="fg" style="flex:2"><label class="fl">Assignee</label><input class="fi" id="te-a" placeholder="Name…"></div>
+        <div class="fg" style="flex:1"><label class="fl">Due Date</label><input class="fi" type="date" id="te-d"></div>
+        <div class="fg" style="flex:1"><label class="fl">Progress %</label><input class="fi" type="number" id="te-pct" min="0" max="100" placeholder="0"></div>
+      </div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="fta" id="te-notes" placeholder="Add notes, context, or links…"></textarea></div>
+      <div id="te-cf-body"></div>
+    </div>
+    <div class="mf">
+      <button class="btn" style="margin-right:auto;color:var(--red);background:none;border:none;cursor:pointer;font-size:13px" onclick="deleteEditTask()">Delete Task</button>
+      <button class="btn btn-ghost" onclick="closeModal('m-tedit')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTaskEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT EDIT MODAL -->
+<div class="ov" id="m-pedit">
+  <div class="modal" style="width:540px">
+    <div class="mh"><div class="mt">Edit Project</div><button class="mc" onclick="closeModal('m-pedit')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Project Name</label><input class="fi" id="pe-n" placeholder="Project name…"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Status</label>
+          <select class="fsl" id="pe-st">
+            <option>On Track</option><option>At Risk</option><option>Off Track</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Owner</label><input class="fi" id="pe-o" placeholder="Owner name…"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Initiative</label><input class="fi" id="pe-ini" placeholder="Initiative…"></div>
+        <div class="fg"><label class="fl">Due Date</label><input class="fi" type="date" id="pe-due"></div>
+      </div>
+      <div class="fg"><label class="fl">Description</label><textarea class="fta" id="pe-desc" placeholder="Project description…" style="min-height:80px"></textarea></div>
+      <div class="fg">
+        <label class="fl">Color</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:2px">
+          <div class="color-swatch" style="background:#4C8EE8" onclick="setPeColor('#4C8EE8',this)"></div>
+          <div class="color-swatch" style="background:#56C4A0" onclick="setPeColor('#56C4A0',this)"></div>
+          <div class="color-swatch" style="background:#9B7AE8" onclick="setPeColor('#9B7AE8',this)"></div>
+          <div class="color-swatch" style="background:#E09B3A" onclick="setPeColor('#E09B3A',this)"></div>
+          <div class="color-swatch" style="background:#3ABFE0" onclick="setPeColor('#3ABFE0',this)"></div>
+          <div class="color-swatch" style="background:#E05C5C" onclick="setPeColor('#E05C5C',this)"></div>
+          <div class="color-swatch" style="background:#60A060" onclick="setPeColor('#60A060',this)"></div>
+          <div class="color-swatch" style="background:#E0A0D0" onclick="setPeColor('#E0A0D0',this)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-pedit')">Cancel</button><button class="btn btn-primary" onclick="saveProjectEdit()">Save</button></div>
+  </div>
+</div>
+
+<!-- PORTFOLIO EDIT MODAL -->
+<div class="ov" id="m-pfedit">
+  <div class="modal" style="width:440px">
+    <div class="mh"><div class="mt">Edit Portfolio</div><button class="mc" onclick="closeModal('m-pfedit')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Portfolio Name</label><input class="fi" id="pfe-n" placeholder="Portfolio name…"></div>
+      <div class="fg"><label class="fl">Description</label><textarea class="fta" id="pfe-desc" placeholder="What this portfolio covers…"></textarea></div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-pfedit')">Cancel</button><button class="btn btn-primary" onclick="savePortfolioEdit()">Save</button></div>
   </div>
 </div>
 
@@ -1093,7 +1183,14 @@ function renderPF() {
       <div class="sc"><div class="sv g">${r.onTrack}</div><div class="sl">On Track</div></div>
       <div class="sc"><div class="sv a">${r.atRisk+r.offTrack}</div><div class="sl">Off Plan</div></div>
       <div class="sc"><div class="sv b">${r.pct}%</div><div class="sl">Avg Progress</div></div>
-    </div>`;
+    </div>
+    ${D.portfolios.length?`<div style="margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Portfolios</div>
+      ${D.portfolios.map(port=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--s1);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:6px">
+        <div><div style="font-size:14px;font-weight:600">${port.name}</div>${port.description?`<div style="font-size:11.5px;color:var(--t3);margin-top:2px">${port.description}</div>`:''}</div>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="openPortfolioEdit('${port.id}')">Edit</button>
+      </div>`).join('')}
+    </div>`:''}`;
   inis.forEach(ini2 => {
     const iPs = ps.filter(p=>p.ini===ini2); const iR = rAll(iPs);
     html += `<div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;margin-top:4px">${ini2}</div>
@@ -1207,7 +1304,7 @@ async function advS(i) {
 }
 
 function renderPDTasks() {
-  const p = D.cur; const pr = rP(p); const cf = D.customField;
+  const p = D.cur; const pr = rP(p);
   const grps = {'In Progress':[],'Blocked':[],'Not Started':[],'Complete':[]};
   (p.tasks||[]).forEach(t=>{(grps[t.s]||grps['Not Started']).push(t);});
   let html = `<div style="flex:1;overflow-y:auto;padding-bottom:24px">`;
@@ -1218,12 +1315,13 @@ function renderPDTasks() {
     ts.forEach(t => {
       const ck=t.s==='Complete'?'dn':t.s==='Blocked'?'bk':t.s==='In Progress'?'ip':'';
       const ic=t.s==='Complete'?'✓':t.s==='Blocked'?'✕':t.s==='In Progress'?'●':'';
-      html+=`<div class="trow">
+      const cfChips=(p.settings?.custom_columns||[]).map(col=>`<span style="font-size:11px;color:var(--t3);background:var(--s3);padding:2px 8px;border-radius:4px">${col.label}: ${t.cf?.[col.key]||'—'}</span>`).join('');
+      html+=`<div class="trow" style="cursor:pointer" onclick="openTaskEdit('${t.id}','${p.id}')">
         <div class="tck ${ck}">${ic}</div>
         <div class="tbody2"><div class="tn ${t.s==='Complete'?'dn':''}">${t.n}</div>
-        <div class="tmeta">${t.a} · Due ${t.d}</div>
+        <div class="tmeta">${t.a||'Unassigned'} · Due ${t.d||'TBD'}</div>
         ${t.s!=='Complete'?pbar(t.pct):''}</div>
-        <div style="display:flex;align-items:center;gap:8px">${chip(t.p)}${cf?`<span style="font-size:11px;color:var(--t3);background:var(--s3);padding:2px 8px;border-radius:4px">${t.cfv||'—'}</span>`:''}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${chip(t.p)}${cfChips}</div>
       </div>`;
     });
     html += `</div><div class="rollup">↳ ${ts.filter(t=>t.pct===100).length}/${ts.length} done · avg ${ga}%</div>`;
@@ -1257,6 +1355,7 @@ function renderPDSheet() {
   const tbl=document.createElement('table');tbl.className='gtbl';tbl.id='gtbl';
   const thead=document.createElement('thead');const hr=document.createElement('tr');hr.innerHTML='<th class="rn">#</th>';
   COLS.forEach(c=>{const th=document.createElement('th');th.textContent=c.label;th.style.minWidth=c.w;th.onclick=()=>sortCol(c.k);hr.appendChild(th);});
+  (D.cur?.settings?.custom_columns||[]).forEach(cc=>{const th=document.createElement('th');th.textContent=cc.label;th.style.minWidth='120px';th.style.color='var(--blue)';hr.appendChild(th);});
   thead.appendChild(hr);tbl.appendChild(thead);
   const tbody=document.createElement('tbody');tbody.id='gtbody';tbl.appendChild(tbody);outer.appendChild(tbl);
   const ab=document.createElement('div');ab.className='add-row-btn';ab.innerHTML='<span style="font-size:16px;color:var(--t3)">+</span> Add row';ab.onclick=addRow;
@@ -1275,6 +1374,16 @@ function appendRow(task){
     else{inp=document.createElement('input');inp.type='text';inp.className='ci';inp.value=task[c.k]||'';inp.placeholder=c.ph||'';inp.oninput=syncGrid;}
     td.appendChild(inp);tr.appendChild(td);
   });
+  (D.cur?.settings?.custom_columns||[]).forEach(cc=>{
+    const td=document.createElement('td');
+    let inp;
+    if(cc.type==='Number'){inp=document.createElement('input');inp.type='number';inp.className='cnum';inp.style.minWidth='90px';inp.value=task.cf?.[cc.key]||'';}
+    else if(cc.type==='Date'){inp=document.createElement('input');inp.type='date';inp.className='cdate';inp.value=task.cf?.[cc.key]||'';}
+    else if(cc.type==='Checkbox'){inp=document.createElement('select');inp.className='csel';['','Yes','No'].forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'—';if((task.cf?.[cc.key]||'')===o)op.selected=true;inp.appendChild(op);});}
+    else{inp=document.createElement('input');inp.type='text';inp.className='ci';inp.style.minWidth='100px';inp.value=task.cf?.[cc.key]||'';inp.placeholder=cc.label+'…';}
+    inp.oninput=syncGrid;inp.onchange=syncGrid;
+    td.appendChild(inp);tr.appendChild(td);
+  });
   tb.appendChild(tr);renumber();
 }
 function renumber(){document.querySelectorAll('#gtbody tr').forEach((r,i)=>{const rn=r.querySelector('.rn');if(rn)rn.textContent=i+1;});}
@@ -1282,7 +1391,17 @@ function addRow(){if(!D.cur)return;appendRow({id:'t'+Date.now(),n:'',s:'Not Star
 function addRows(n){for(let i=0;i<n;i++)addRow();}
 function delRows(){if(!selRows.size){toast('Click row numbers to select');return;}document.querySelectorAll('#gtbody tr').forEach(tr=>{if(selRows.has(tr.dataset.id))tr.remove();});selRows.clear();renumber();syncGrid();toast('Deleted');}
 function sortCol(k){if(!D.cur)return;D.cur.tasks.sort((a,b)=>String(a[k]||'').localeCompare(String(b[k]||'')));populateGrid(D.cur.tasks);}
-function syncGrid(){const p=D.cur;if(!p)return;p.tasks=[];document.querySelectorAll('#gtbody tr').forEach(tr=>{const cells=[...tr.querySelectorAll('td:not(.rn)')];const t={id:tr.dataset.id};COLS.forEach((c,ci)=>{const inp=cells[ci]?.querySelector('input,select');if(inp)t[c.k]=c.type==='num'?Math.min(100,Math.max(0,parseInt(inp.value)||0)):inp.value||'';});if(t.n)p.tasks.push(t);});}
+function syncGrid(){
+  const p=D.cur;if(!p)return;p.tasks=[];
+  const ccols=p.settings?.custom_columns||[];
+  document.querySelectorAll('#gtbody tr').forEach(tr=>{
+    const cells=[...tr.querySelectorAll('td:not(.rn)')];
+    const t={id:tr.dataset.id,cf:{}};
+    COLS.forEach((c,ci)=>{const inp=cells[ci]?.querySelector('input,select');if(inp)t[c.k]=c.type==='num'?Math.min(100,Math.max(0,parseInt(inp.value)||0)):inp.value||'';});
+    ccols.forEach((cc,ci)=>{const inp=cells[COLS.length+ci]?.querySelector('input,select');if(inp)t.cf[cc.key]=inp.value||'';});
+    if(t.n)p.tasks.push(t);
+  });
+}
 function exportCSV(){const p=D.cur;if(!p)return;syncGrid();const hdr=COLS.map(c=>c.label).join(',');const rows=p.tasks.map(t=>COLS.map(c=>`"${String(t[c.k]||'').replace(/"/g,'""')}"`).join(','));const blob=new Blob([[hdr,...rows].join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${(p.name||'tasks').replace(/\s+/g,'_')}.csv`;a.click();URL.revokeObjectURL(a.href);toast('Exported');}
 
 async function saveSheet(){
@@ -1294,10 +1413,10 @@ async function saveSheet(){
       if(!t.n)continue;
       const isNew=isNaN(parseInt(t.id));
       if(isNew){
-        const saved=await api(`/api/projects/${p.id}/tasks`,{method:'POST',body:JSON.stringify({name:t.n,status:t.s,assignee_name:t.a,priority:t.p,due_date:t.d,progress:t.pct})});
+        const saved=await api(`/api/projects/${p.id}/tasks`,{method:'POST',body:JSON.stringify({name:t.n,status:t.s,assignee_name:t.a,priority:t.p,due_date:t.d,progress:t.pct,custom_fields:t.cf||{}})});
         updated.push(saved);
       }else{
-        const saved=await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({name:t.n,status:t.s,assignee_name:t.a,priority:t.p,due_date:t.d,progress:t.pct})});
+        const saved=await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({name:t.n,status:t.s,assignee_name:t.a,priority:t.p,due_date:t.d,progress:t.pct,custom_fields:t.cf||{}})});
         updated.push(saved);
       }
     }
@@ -1306,7 +1425,35 @@ async function saveSheet(){
   } catch(err){ toast('Save error: '+err.message); }
 }
 
-function renderPDInfo(){const p=D.cur;const pr=rP(p);document.getElementById('pd-body').innerHTML=`<div style="flex:1;overflow-y:auto;padding:18px 24px 28px"><div class="tbl-wrap" style="margin-bottom:12px"><table class="tbl"><tbody>${[['Initiative',p.ini],['Owner',p.owner],['Status',chip(p.st)],['Due',p.due],['Stage',STAGES[p.sg]]].map(([k,v])=>`<tr><td style="color:var(--t2);width:120px">${k}</td><td>${v}</td></tr>`).join('')}</tbody></table></div><div style="font-size:13.5px;color:var(--t2);line-height:1.65;margin-bottom:18px">${p.desc}</div><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);margin-bottom:6px"><span>Progress</span><span>${pr.pct}%</span></div>${pbar(pr.pct,5)}</div>`;}
+function renderPDInfo(){
+  const p=D.cur;const pr=rP(p);
+  const cfCols=p.settings?.custom_columns||[];
+  const cfSection=cfCols.length?`<div style="margin-top:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase">Custom Fields (${cfCols.length})</div>
+      <button class="btn btn-ghost" style="font-size:11px" onclick="openModal('m-cf')">+ Add Field</button>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><tbody>${cfCols.map(c=>`<tr><td style="color:var(--t2);width:160px">${c.label}</td><td class="cm">${c.type}</td><td style="text-align:right"><button class="btn btn-ghost" style="font-size:10px;padding:2px 8px" onclick="removeCFCol('${c.key}')">Remove</button></td></tr>`).join('')}</tbody></table></div>
+  </div>`:`<div style="margin-top:18px"><button class="btn btn-ghost" style="font-size:12px" onclick="openModal('m-cf')">+ Add Custom Field</button></div>`;
+  document.getElementById('pd-body').innerHTML=`<div style="flex:1;overflow-y:auto;padding:18px 24px 28px">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-ghost" onclick="openProjectEdit()">Edit Project</button></div>
+    <div class="tbl-wrap" style="margin-bottom:12px"><table class="tbl"><tbody>
+      ${[['Name',p.name],['Initiative',p.ini||'—'],['Owner',p.owner||'—'],['Status',chip(p.st)],['Due',p.due||'—'],['Stage',STAGES[p.sg]],['Description',`<span style="color:var(--t2)">${p.desc||'—'}</span>`]].map(([k,v])=>`<tr><td style="color:var(--t2);width:120px">${k}</td><td>${v}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);margin-bottom:6px"><span>Progress</span><span>${pr.pct}%</span></div>${pbar(pr.pct,5)}
+    ${cfSection}
+  </div>`;
+}
+async function removeCFCol(key){
+  const p=D.cur;if(!p)return;
+  if(!confirm('Remove this custom field? Values will be lost.'))return;
+  if(!p.settings?.custom_columns)return;
+  p.settings.custom_columns=p.settings.custom_columns.filter(c=>c.key!==key);
+  try{
+    await api(`/api/projects/${p.id}`,{method:'PUT',body:JSON.stringify({settings:p.settings})});
+    toast('Field removed');renderPD(activePDTab());
+  }catch(e){toast('Error: '+e.message);}
+}
 
 // ═══════════ TASKS ══════════════════════════
 let tkActive='all';
@@ -1335,7 +1482,7 @@ function renderTK(f){
     const pd=pts.filter(t=>t.s==='Complete').length,pb=pts.filter(t=>t.s==='Blocked').length,pa=Math.round(pts.reduce((s,t)=>s+t.pct,0)/pts.length);const pc=pts[0]?.color||'#4C8EE8';
     html+=`<tr class="gr"><td colspan="7" style="padding:7px 14px"><div style="display:flex;justify-content:space-between"><span class="gl" style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:${pc};display:inline-block"></span>${proj}</span><span class="cm">${pts.length} tasks · ${pd} done · ${pb} blocked</span></div></td></tr>`;
     pts.forEach(t=>{const ck=t.s==='Complete'?'dn':t.s==='Blocked'?'bk':t.s==='In Progress'?'ip':'';const ic=t.s==='Complete'?'✓':t.s==='Blocked'?'✕':t.s==='In Progress'?'●':'';
-    html+=`<tr class="cl" onclick="loadP('${t.pid}')"><td style="padding-left:22px"><div class="trow" style="padding:0;border:none"><div class="tck ${ck}" style="flex-shrink:0">${ic}</div><div class="tbody2"><div class="tn ${t.s==='Complete'?'dn':''}">${t.n}</div></div></div></td><td class="cm">${t.proj}</td><td>${chip(t.s)}</td><td>${ach(t.a)}</td><td>${chip(t.p)}</td><td class="cm">${t.d}</td><td style="min-width:90px">${ibar(t.pct)}</td></tr>`;});
+    html+=`<tr class="cl" onclick="openTaskEdit('${t.id}','${t.pid}')"><td style="padding-left:22px"><div class="trow" style="padding:0;border:none"><div class="tck ${ck}" style="flex-shrink:0">${ic}</div><div class="tbody2"><div class="tn ${t.s==='Complete'?'dn':''}">${t.n}</div></div></div></td><td class="cm">${t.proj}</td><td>${chip(t.s)}</td><td>${ach(t.a)}</td><td>${chip(t.p)}</td><td class="cm">${t.d||'—'}</td><td style="min-width:90px">${ibar(t.pct)}</td></tr>`;});
     html+=`<tr class="rup"><td colspan="7" style="padding:5px 14px 5px 22px">↳ ${proj} · ${pa}% avg · ${pd}/${pts.length} done</td></tr>`;
   });
   html+=`</tbody></table></div></div>`;
@@ -1415,6 +1562,21 @@ async function executeAIAction(action){
           toast(`Task added: "${t.n}" → ${p.name}`);
           if(curView==='tasks')renderTK(tkActive);
           if(D.cur?.id===p.id)renderPD(activePDTab());
+        }catch(e){toast('Error: '+e.message);}
+        break;}
+      case 'update_project':{
+        const p=D.projects.find(p=>p.name.toLowerCase()===action.project?.toLowerCase());
+        if(!p){toast('Project not found: '+action.project);break;}
+        try{
+          const upd={name:p.name,initiative:p.ini,region:p.rgn,stage:p.sg,color:p.color,description:p.desc};
+          if(action.status)upd.status=action.status;
+          if(action.owner)upd.owner=action.owner;
+          if(action.due)upd.due_date=action.due;
+          if(action.initiative)upd.initiative=action.initiative;
+          const saved=await api(`/api/projects/${p.id}`,{method:'PUT',body:JSON.stringify(upd)});
+          Object.assign(p,saved);
+          toast(`Project "${p.name}" updated`);
+          renderPF();renderPJ();if(D.cur?.id===p.id)renderPD(activePDTab());
         }catch(e){toast('Error: '+e.message);}
         break;}
       case 'update_task':{
@@ -1590,12 +1752,154 @@ async function saveTask(){
     renderTK(tkActive);
   } catch(err) { toast('Error: '+err.message); }
 }
-function saveCF(){
-  const n=document.getElementById('cf-n').value.trim();if(!n)return;const p=D.cur;if(!p)return;
-  D.customField={n,t:document.getElementById('cf-t').value};p.tasks.forEach(t=>{if(!t.cfv)t.cfv='—';});
-  closeModal('m-cf');toast(`"${n}" field added`);renderPDTasks();
+async function saveCF(){
+  const n=document.getElementById('cf-n').value.trim();if(!n)return;
+  const p=D.cur;if(!p)return;
+  const type=document.getElementById('cf-t').value;
+  const key=n.toLowerCase().replace(/[^a-z0-9]+/g,'_');
+  if(!p.settings)p.settings={};
+  if(!p.settings.custom_columns)p.settings.custom_columns=[];
+  if(p.settings.custom_columns.find(c=>c.key===key)){toast('Field with that name already exists');return;}
+  p.settings.custom_columns.push({key,label:n,type});
+  try{
+    await api(`/api/projects/${p.id}`,{method:'PUT',body:JSON.stringify({settings:p.settings})});
+    closeModal('m-cf');document.getElementById('cf-n').value='';
+    toast(`"${n}" field added`);renderPD(activePDTab());
+  }catch(e){p.settings.custom_columns.pop();toast('Error: '+e.message);}
 }
 function openTaskModal(){const sel=document.getElementById('nt-p');sel.innerHTML=D.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');if(D.cur)sel.value=D.cur.id;openModal('m-task');}
+
+// ═══════════ TASK EDIT ═══════════════════════
+let editTaskId=null,editTaskProjId=null;
+function openTaskEdit(taskId,projId){
+  const proj=D.projects.find(p=>p.id===projId);
+  const t=proj?.tasks?.find(t=>t.id===taskId);
+  if(!t||!proj)return;
+  editTaskId=taskId;editTaskProjId=projId;
+  document.getElementById('te-n').value=t.n||'';
+  document.getElementById('te-s').value=t.s||'Not Started';
+  document.getElementById('te-p').value=t.p||'Medium';
+  document.getElementById('te-a').value=t.a||'';
+  document.getElementById('te-d').value=t.d||'';
+  document.getElementById('te-pct').value=t.pct??0;
+  document.getElementById('te-notes').value=t.notes||'';
+  document.getElementById('te-proj-lbl').textContent=proj.name;
+  const cols=proj.settings?.custom_columns||[];
+  const cfBody=document.getElementById('te-cf-body');
+  if(cols.length){
+    cfBody.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-top:4px;margin-bottom:6px">Custom Fields</div>`+
+      cols.map(col=>{const val=t.cf?.[col.key]||'';
+        if(col.type==='Number')return`<div class="fg"><label class="fl">${col.label}</label><input class="fi" type="number" id="te-cf-${col.key}" value="${val}" placeholder="0"></div>`;
+        if(col.type==='Date')return`<div class="fg"><label class="fl">${col.label}</label><input class="fi" type="date" id="te-cf-${col.key}" value="${val}"></div>`;
+        if(col.type==='Checkbox')return`<div class="fg"><label class="fl">${col.label}</label><select class="fsl" id="te-cf-${col.key}"><option value="">—</option><option${val==='Yes'?' selected':''}>Yes</option><option${val==='No'?' selected':''}>No</option></select></div>`;
+        return`<div class="fg"><label class="fl">${col.label}</label><input class="fi" id="te-cf-${col.key}" value="${val}" placeholder="${col.label}…"></div>`;
+      }).join('');
+  }else{cfBody.innerHTML='';}
+  openModal('m-tedit');
+}
+async function saveTaskEdit(){
+  const proj=D.projects.find(p=>p.id===editTaskProjId);
+  const t=proj?.tasks?.find(t=>t.id===editTaskId);
+  if(!t){closeModal('m-tedit');return;}
+  const name=document.getElementById('te-n').value.trim();
+  if(!name){toast('Task name required');return;}
+  const cols=proj.settings?.custom_columns||[];
+  const custom_fields={...(t.cf||{})};
+  cols.forEach(col=>{const el=document.getElementById(`te-cf-${col.key}`);if(el)custom_fields[col.key]=el.value;});
+  try{
+    const saved=await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify({
+      name,status:document.getElementById('te-s').value,
+      assignee_name:document.getElementById('te-a').value.trim(),
+      priority:document.getElementById('te-p').value,
+      due_date:document.getElementById('te-d').value,
+      progress:parseInt(document.getElementById('te-pct').value)||0,
+      notes:document.getElementById('te-notes').value,
+      custom_fields
+    })});
+    Object.assign(t,saved);
+    closeModal('m-tedit');toast('Task saved');
+    if(curView==='tasks')renderTK(tkActive);
+    if(D.cur?.id===editTaskProjId)renderPD(activePDTab());
+    renderPF();renderPJ();
+  }catch(e){toast('Error: '+e.message);}
+}
+async function deleteEditTask(){
+  if(!editTaskId)return;
+  const proj=D.projects.find(p=>p.id===editTaskProjId);
+  if(!proj)return;
+  if(!confirm('Delete this task?'))return;
+  try{
+    await api(`/api/tasks/${editTaskId}`,{method:'DELETE'});
+    proj.tasks=proj.tasks.filter(t=>t.id!==editTaskId);
+    closeModal('m-tedit');toast('Task deleted');
+    if(curView==='tasks')renderTK(tkActive);
+    if(D.cur?.id===editTaskProjId)renderPD(activePDTab());
+    renderPF();renderPJ();
+  }catch(e){toast('Error: '+e.message);}
+}
+
+// ═══════════ PROJECT EDIT ════════════════════
+let peColor='#4C8EE8';
+function setPeColor(color,el){
+  peColor=color;
+  document.querySelectorAll('#m-pedit .color-swatch').forEach(s=>s.style.borderColor='transparent');
+  el.style.borderColor='var(--blue)';
+}
+function openProjectEdit(){
+  const p=D.cur;if(!p)return;
+  document.getElementById('pe-n').value=p.name||'';
+  document.getElementById('pe-st').value=p.st||'On Track';
+  document.getElementById('pe-o').value=p.owner||'';
+  document.getElementById('pe-ini').value=p.ini||'';
+  document.getElementById('pe-due').value=p.due||'';
+  document.getElementById('pe-desc').value=p.desc||'';
+  peColor=p.color||'#4C8EE8';
+  document.querySelectorAll('#m-pedit .color-swatch').forEach(s=>{
+    s.style.borderColor=s.style.background===peColor?'var(--blue)':'transparent';
+  });
+  openModal('m-pedit');
+}
+async function saveProjectEdit(){
+  const p=D.cur;if(!p)return;
+  const name=document.getElementById('pe-n').value.trim();
+  if(!name){toast('Project name required');return;}
+  try{
+    const saved=await api(`/api/projects/${p.id}`,{method:'PUT',body:JSON.stringify({
+      name,status:document.getElementById('pe-st').value,
+      owner:document.getElementById('pe-o').value,
+      initiative:document.getElementById('pe-ini').value,
+      due_date:document.getElementById('pe-due').value,
+      description:document.getElementById('pe-desc').value,
+      color:peColor,stage:p.sg,region:p.rgn
+    })});
+    Object.assign(p,saved);
+    closeModal('m-pedit');toast('Project saved');
+    renderPD(activePDTab());renderPF();renderPJ();buildSB(curView);
+  }catch(e){toast('Error: '+e.message);}
+}
+
+// ═══════════ PORTFOLIO EDIT ══════════════════
+let editPortfolioId=null;
+function openPortfolioEdit(portId){
+  const port=D.portfolios.find(p=>p.id===portId);
+  if(!port)return;
+  editPortfolioId=portId;
+  document.getElementById('pfe-n').value=port.name||'';
+  document.getElementById('pfe-desc').value=port.description||'';
+  openModal('m-pfedit');
+}
+async function savePortfolioEdit(){
+  const port=D.portfolios.find(p=>p.id===editPortfolioId);
+  if(!port)return;
+  const name=document.getElementById('pfe-n').value.trim();
+  if(!name){toast('Portfolio name required');return;}
+  try{
+    const saved=await api(`/api/portfolios/${editPortfolioId}`,{method:'PUT',body:JSON.stringify({name,description:document.getElementById('pfe-desc').value})});
+    Object.assign(port,saved);
+    closeModal('m-pfedit');toast('Portfolio saved');
+    renderPF();buildSB(curView);
+  }catch(e){toast('Error: '+e.message);}
+}
 
 // ═══════════ AI ═════════════════════════════
 let aiOpen=false;
@@ -1638,6 +1942,7 @@ Available actions:
 - create_portfolio: {"type":"create_portfolio","name":"Portfolio Name","description":"optional"}
 - create_project:   {"type":"create_project","name":"Project Name","initiative":"initiative","status":"On Track|At Risk|Off Track","owner":"name","due":"YYYY-MM-DD","description":"optional","portfolio":"exact portfolio name (optional — defaults to first portfolio)","color":"#hex (optional)"}
 - add_task:         {"type":"add_task","project":"exact project name","name":"Task Name","assignee":"name","priority":"Critical|High|Medium|Low","due":"YYYY-MM-DD or TBD","status":"Not Started|In Progress|Blocked"}
+- update_project:   {"type":"update_project","project":"exact project name","status":"On Track|At Risk|Off Track","owner":"name","due":"YYYY-MM-DD","initiative":"initiative"}
 - update_task:      {"type":"update_task","project":"project name","task":"exact task name","status":"Complete|In Progress|Not Started|Blocked","pct":0-100}
 - filter_tasks:     {"type":"filter_tasks","assignee":"name","status":"Complete|In Progress|Not Started|Blocked","priority":"Critical|High|Medium|Low","project":"exact project name","search":"keyword"}
 - filter_projects:  {"type":"filter_projects","status":"On Track|At Risk|Off Track","initiative":"initiative name"}

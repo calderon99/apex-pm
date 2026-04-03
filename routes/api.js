@@ -155,17 +155,49 @@ router.post('/projects', auth, async (req, res) => {
 });
 
 router.put('/projects/:id', auth, async (req, res) => {
-  const { name, initiative, region, status, stage, owner, due_date, color, description } = req.body;
   try {
+    const cur = await query('SELECT * FROM projects WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    if (!cur.rows.length) return res.status(404).json({ error: 'Project not found' });
+    const c = cur.rows[0];
+    const b = req.body;
+    const name        = b.name        ?? c.name;
+    const initiative  = b.initiative  ?? c.initiative;
+    const region      = b.region      ?? c.region;
+    const status      = b.status      ?? c.status;
+    const stage       = b.stage       ?? c.stage;
+    const owner       = b.owner       ?? c.owner_name;
+    const due_date    = b.due_date    ?? c.due_date;
+    const color       = b.color       ?? c.color;
+    const description = b.description ?? c.description;
+    const settings    = b.settings != null ? JSON.stringify(b.settings) : JSON.stringify(c.settings || {});
     const result = await query(
       `UPDATE projects SET name=$1, initiative=$2, region=$3, status=$4, stage=$5,
-       owner_name=$6, due_date=$7, color=$8, description=$9, updated_at=NOW()
-       WHERE id=$10 AND owner_id=$11 RETURNING *`,
-      [name, initiative, region, status, stage ?? 0, owner, due_date || '', color, description,
-       req.params.id, req.user.id]
+       owner_name=$6, due_date=$7, color=$8, description=$9, settings=$10, updated_at=NOW()
+       WHERE id=$11 AND owner_id=$12 RETURNING *`,
+      [name, initiative, region, status, stage, owner, due_date || '', color, description,
+       settings, req.params.id, req.user.id]
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Project not found' });
     res.json(dbProjectToFE(result.rows[0], null));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/portfolios/:id', auth, async (req, res) => {
+  try {
+    const cur = await query('SELECT * FROM portfolios WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    if (!cur.rows.length) return res.status(404).json({ error: 'Portfolio not found' });
+    const c = cur.rows[0];
+    const name        = req.body.name        ?? c.name;
+    const description = req.body.description ?? c.description;
+    const settings    = req.body.settings != null ? JSON.stringify(req.body.settings) : JSON.stringify(c.settings || {});
+    const result = await query(
+      `UPDATE portfolios SET name=$1, description=$2, settings=$3, updated_at=NOW()
+       WHERE id=$4 AND owner_id=$5 RETURNING *`,
+      [name, description || '', settings, req.params.id, req.user.id]
+    );
+    const p = result.rows[0];
+    res.json({ id: String(p.id), name: p.name, description: p.description || '', settings: p.settings || {} });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -198,14 +230,28 @@ router.post('/projects/:id/tasks', auth, async (req, res) => {
 });
 
 router.put('/tasks/:id', auth, async (req, res) => {
-  const { name, status, assignee_name, priority, due_date, progress } = req.body;
   try {
+    const cur = await query('SELECT * FROM tasks WHERE id=$1', [req.params.id]);
+    if (!cur.rows.length) return res.status(404).json({ error: 'Task not found' });
+    const c = cur.rows[0];
+    const b = req.body;
+    const name          = b.name          ?? c.name;
+    const status        = b.status        ?? c.status;
+    const assignee_name = b.assignee_name ?? c.assignee_name;
+    const priority      = b.priority      ?? c.priority;
+    const due_date      = b.due_date      ?? c.due_date;
+    const progress      = b.progress      ?? c.progress;
+    const notes         = b.notes         ?? c.notes;
+    const custom_fields = b.custom_fields != null
+      ? JSON.stringify(b.custom_fields)
+      : JSON.stringify(c.custom_fields || {});
     const result = await query(
       `UPDATE tasks SET name=$1, status=$2, assignee_name=$3, priority=$4,
-       due_date=$5, progress=$6, updated_at=NOW() WHERE id=$7 RETURNING *`,
-      [name, status, assignee_name || '', priority, due_date || '', progress ?? 0, req.params.id]
+       due_date=$5, progress=$6, notes=$7, custom_fields=$8, updated_at=NOW()
+       WHERE id=$9 RETURNING *`,
+      [name, status, assignee_name || '', priority, due_date || '',
+       progress ?? 0, notes || '', custom_fields, req.params.id]
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Task not found' });
     res.json(dbTaskToFE(result.rows[0]));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -234,6 +280,7 @@ function dbProjectToFE(p, tasks) {
     due: p.due_date || '',
     color: p.color || '#4C8EE8',
     desc: p.description || '',
+    settings: p.settings || {},
     tasks: tasks !== null ? (tasks || []) : undefined,
   };
 }
@@ -247,6 +294,8 @@ function dbTaskToFE(t) {
     p: t.priority,
     d: t.due_date || '',
     pct: t.progress || 0,
+    notes: t.notes || '',
+    cf: t.custom_fields || {},
   };
 }
 
