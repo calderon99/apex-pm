@@ -1564,6 +1564,19 @@ async function executeAIAction(action){
           if(D.cur?.id===p.id)renderPD(activePDTab());
         }catch(e){toast('Error: '+e.message);}
         break;}
+      case 'update_portfolio':{
+        const port=D.portfolios.find(pf=>pf.name.toLowerCase()===action.portfolio?.toLowerCase());
+        if(!port){toast('Portfolio not found: '+action.portfolio);break;}
+        try{
+          const upd={name:port.name,description:port.description||''};
+          if(action.name)upd.name=action.name;
+          if(action.description!==undefined)upd.description=action.description;
+          const saved=await api(`/api/portfolios/${port.id}`,{method:'PUT',body:JSON.stringify(upd)});
+          Object.assign(port,saved);
+          toast(`Portfolio "${upd.name}" updated`);
+          renderPF();
+        }catch(e){toast('Error: '+e.message);}
+        break;}
       case 'update_project':{
         const p=D.projects.find(p=>p.name.toLowerCase()===action.project?.toLowerCase());
         if(!p){toast('Project not found: '+action.project);break;}
@@ -1589,6 +1602,10 @@ async function executeAIAction(action){
             const upd={};
             if(action.status){upd.status=action.status;t.s=action.status;}
             if(action.pct!==undefined){upd.progress=Number(action.pct);t.pct=Number(action.pct);}
+            if(action.assignee!==undefined){upd.assignee_name=action.assignee;t.a=action.assignee;}
+            if(action.priority!==undefined){upd.priority=action.priority;t.p=action.priority;}
+            if(action.due!==undefined){upd.due_date=action.due;t.d=action.due;}
+            if(action.notes!==undefined){upd.notes=action.notes;t.notes=action.notes;}
             try{
               await api(`/api/tasks/${t.id}`,{method:'PUT',body:JSON.stringify(upd)});
               toast(`Updated: "${t.n}"`);
@@ -1942,8 +1959,9 @@ Available actions:
 - create_portfolio: {"type":"create_portfolio","name":"Portfolio Name","description":"optional"}
 - create_project:   {"type":"create_project","name":"Project Name","initiative":"initiative","status":"On Track|At Risk|Off Track","owner":"name","due":"YYYY-MM-DD","description":"optional","portfolio":"exact portfolio name (optional — defaults to first portfolio)","color":"#hex (optional)"}
 - add_task:         {"type":"add_task","project":"exact project name","name":"Task Name","assignee":"name","priority":"Critical|High|Medium|Low","due":"YYYY-MM-DD or TBD","status":"Not Started|In Progress|Blocked"}
+- update_portfolio: {"type":"update_portfolio","portfolio":"exact portfolio name","name":"new name (optional)","description":"new description (optional)"}
 - update_project:   {"type":"update_project","project":"exact project name","status":"On Track|At Risk|Off Track","owner":"name","due":"YYYY-MM-DD","initiative":"initiative"}
-- update_task:      {"type":"update_task","project":"project name","task":"exact task name","status":"Complete|In Progress|Not Started|Blocked","pct":0-100}
+- update_task:      {"type":"update_task","project":"project name","task":"exact task name","status":"Complete|In Progress|Not Started|Blocked","pct":0-100,"assignee":"name","priority":"Critical|High|Medium|Low","due":"YYYY-MM-DD","notes":"text"}
 - filter_tasks:     {"type":"filter_tasks","assignee":"name","status":"Complete|In Progress|Not Started|Blocked","priority":"Critical|High|Medium|Low","project":"exact project name","search":"keyword"}
 - filter_projects:  {"type":"filter_projects","status":"On Track|At Risk|Off Track","initiative":"initiative name"}
 - show_report:      {"type":"show_report","title":"Title","subtitle":"optional","sections":[{"heading":"Heading","rows":[{"label":"Label","value":"Value","note":"optional"}]}]}
