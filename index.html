@@ -567,24 +567,18 @@ body {
   <div class="view on" id="v-portfolio">
     <div class="ph">
       <div class="ph-left">
-        <div class="pt">Portfolio</div>
+        <div class="pt" id="pf-title">Portfolio</div>
         <div class="pm" id="pf-pm">—</div>
       </div>
       <div class="ph-actions">
-        <select class="sel" id="pf-ini" onchange="renderPF()">
+        <select class="sel" id="pf-ini" onchange="renderPF()" style="display:none">
           <option value="all">All Initiatives</option>
           <option value="GTM Acceleration">GTM Acceleration</option>
           <option value="Platform Modernization">Platform Modernization</option>
           <option value="Ops Excellence">Ops Excellence</option>
           <option value="Customer Experience">Customer Experience</option>
         </select>
-        <select class="sel" id="pf-rgn" onchange="renderPF()">
-          <option value="all">All Regions</option>
-          <option value="na">North America</option>
-          <option value="emea">EMEA</option>
-          <option value="apac">APAC</option>
-        </select>
-        <button class="btn btn-ghost" onclick="openModal('m-proj')">+ Project</button>
+        <button class="btn btn-primary" onclick="openModal('m-proj')">+ New Project</button>
       </div>
     </div>
     <div class="scroll" id="pf-body"></div>
@@ -1172,55 +1166,80 @@ function buildSB(section) {
 // ═══════════ PORTFOLIO ══════════════════════
 function renderPF() {
   const ini = document.getElementById('pf-ini')?.value||'all';
-  const rgn = document.getElementById('pf-rgn')?.value||'all';
-  let ps = D.projects.filter(p => (ini==='all'||p.ini===ini) && (rgn==='all'||p.rgn===rgn));
+  let ps = D.projects.filter(p => ini==='all'||p.ini===ini);
   const r = rAll(ps);
-  document.getElementById('pf-pm').textContent = `${r.total} projects · ${r.totalTasks} tasks · ${r.pct}% avg completion`;
-  const inis = [...new Set(ps.map(p=>p.ini))];
+
+  // Update header title to portfolio name
+  const titleEl = document.getElementById('pf-title');
+  if(titleEl) titleEl.textContent = D.portfolios.length===1 ? D.portfolios[0].name : 'All Portfolios';
+
+  // Update subtitle
+  const now = new Date(); const days = Math.floor((now - new Date(Math.max(...ps.flatMap(p=>p.tasks||[]).map(t=>0)))) / 86400000);
+  document.getElementById('pf-pm').textContent = `${r.total} project${r.total!==1?'s':''} · ${r.totalTasks} task${r.totalTasks!==1?'s':''} · last updated today`;
+
+  // Group by portfolio
+  const portGroups = {};
+  ps.forEach(p => {
+    const key = p.portfolio || 'Unassigned';
+    const pid = p.portfolio_id || 'none';
+    if(!portGroups[key]) portGroups[key] = {name:key, pid, projects:[]};
+    portGroups[key].projects.push(p);
+  });
+
+  // Only show Blocked column if any project has blocked tasks
+  const anyBlocked = ps.some(p => rP(p).blocked > 0);
+
   let html = `<div class="pad">
-    <div class="stats s4" style="margin-bottom:18px">
-      <div class="sc"><div class="sv">${r.total}</div><div class="sl">Projects</div></div>
+    <div class="stats s4" style="margin-bottom:20px">
+      <div class="sc"><div class="sv">${r.total}</div><div class="sl">Total Projects</div></div>
       <div class="sc"><div class="sv g">${r.onTrack}</div><div class="sl">On Track</div></div>
-      <div class="sc"><div class="sv a">${r.atRisk+r.offTrack}</div><div class="sl">Off Plan</div></div>
+      <div class="sc"><div class="sv a">${r.atRisk+r.offTrack}</div><div class="sl">Needs Attention</div></div>
       <div class="sc"><div class="sv b">${r.pct}%</div><div class="sl">Avg Progress</div></div>
-    </div>
-    ${D.portfolios.length?`<div style="margin-bottom:18px">
-      <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Portfolios</div>
-      ${D.portfolios.map(port=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--s1);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:6px">
-        <div><div style="font-size:14px;font-weight:600">${port.name}</div>${port.description?`<div style="font-size:11.5px;color:var(--t3);margin-top:2px">${port.description}</div>`:''}</div>
-        <button class="btn btn-ghost" style="font-size:11px" onclick="openPortfolioEdit('${port.id}')">Edit</button>
-      </div>`).join('')}
-    </div>`:''}`;
-  inis.forEach(ini2 => {
-    const iPs = ps.filter(p=>p.ini===ini2); const iR = rAll(iPs);
-    html += `<div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;margin-top:4px">${ini2}</div>
-    <div style="background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-        <div style="font-size:11.5px;color:var(--t2)">${iR.total} projects · ${iR.totalTasks} tasks</div>
-        <div style="font-size:20px;font-weight:700">${iR.pct}%</div>
-      </div>${pbar(iR.pct,5)}
-      <div style="display:flex;gap:16px;margin-top:8px">
-        <span style="font-size:10.5px;color:var(--green)">${iR.onTrack} on track</span>
-        <span style="font-size:10.5px;color:var(--amber)">${iR.atRisk} at risk</span>
-        <span style="font-size:10.5px;color:var(--red)">${iR.blocked} blocked</span>
+    </div>`;
+
+  Object.values(portGroups).forEach(grp => {
+    const gR = rAll(grp.projects);
+    const port = D.portfolios.find(pf => String(pf.id) === String(grp.pid));
+    html += `<div style="margin-bottom:28px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase">${grp.name}</span>
+          <span style="font-size:11.5px;color:var(--t3)">${gR.total} project${gR.total!==1?'s':''} · ${gR.totalTasks} task${gR.totalTasks!==1?'s':''}</span>
+        </div>
+        ${port?`<button class="btn btn-ghost" style="font-size:11px;padding:3px 10px" onclick="openPortfolioEdit('${port.id}')">Edit</button>`:''}
       </div>
-    </div>
-    <div class="tbl-wrap" style="margin-bottom:20px">
-      <table class="tbl"><thead><tr><th>Project</th><th>Status</th><th>Owner</th><th>Tasks</th><th>Blocked</th><th>Progress</th><th>Due</th></tr></thead><tbody>`;
-    iPs.forEach(p => {
+      <div class="tbl-wrap">
+        <table class="tbl"><thead><tr>
+          <th>Project</th><th>Status</th><th>Owner</th>
+          ${anyBlocked?'<th>Blocked</th>':''}
+          <th>Progress</th><th>Due</th>
+        </tr></thead><tbody>`;
+    grp.projects.forEach(p => {
       const pr = rP(p);
       html += `<tr class="cl" onclick="loadP('${p.id}')">
-        <td><div class="cp" style="display:flex;align-items:center;gap:7px"><span style="width:6px;height:6px;border-radius:50%;background:${p.color};flex-shrink:0"></span>${p.name}</div></td>
-        <td>${chip(p.st)}</td><td>${ach(p.owner)}</td>
-        <td class="cm">${pr.done}/${pr.total}</td>
-        <td>${pr.blocked>0?`<span class="cm" style="color:var(--red)">${pr.blocked}</span>`:'<span class="cm">—</span>'}</td>
-        <td style="min-width:100px">${ibar(pr.pct)}</td>
-        <td class="cm">${p.due}</td>
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></span>
+          <span style="font-weight:500;font-size:13px">${p.name}</span>
+        </div></td>
+        <td>${chip(p.st)}</td>
+        <td>${p.owner?ach(p.owner):'<span class="cm">—</span>'}</td>
+        ${anyBlocked?`<td>${pr.blocked>0?`<span style="color:var(--red);font-size:12px;font-weight:600">${pr.blocked}</span>`:'<span class="cm">—</span>'}</td>`:''}
+        <td style="min-width:130px">${ibar(pr.pct)}</td>
+        <td class="cm">${p.due||'—'}</td>
       </tr>`;
     });
-    html += `<tr class="rup"><td colspan="7" style="padding:6px 14px 6px 21px">↳ Initiative rollup · ${iR.pct}% avg · ${iR.onTrack}/${iR.total} on track · ${iR.blocked} blocked tasks</td></tr>`;
-    html += `</tbody></table></div>`;
+    html += `</tbody></table></div></div>`;
   });
+
+  if(Object.keys(portGroups).length===0) {
+    html += `<div style="text-align:center;padding:60px 20px;color:var(--t3)">
+      <div style="font-size:32px;margin-bottom:12px">📂</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">No projects yet</div>
+      <div style="font-size:13px;margin-bottom:18px">Create your first project to get started.</div>
+      <button class="btn btn-primary" onclick="openModal('m-proj')">+ New Project</button>
+    </div>`;
+  }
+
   html += `</div>`;
   document.getElementById('pf-body').innerHTML = html;
 }
