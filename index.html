@@ -7,30 +7,64 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-  background: #0C0E12;
-  color: #E2E5EC;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--t1);
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: background 0.25s ease, color 0.2s ease;
 }
 
+/* ── DARK MODE (default) ───────── */
 :root {
   --bg: #0C0E12;
   --s1: #111318;
   --s2: #181C22;
   --s3: #1E2330;
   --s4: #252D3D;
-  --line: rgba(255,255,255,0.07);
-  --line2: rgba(255,255,255,0.12);
-  --t1: #E2E5EC;
-  --t2: #7C8494;
-  --t3: #3E4555;
+  --line: rgba(255,255,255,0.08);
+  --line2: rgba(255,255,255,0.14);
+  --t1: #ECEEF5;
+  --t2: #848DA0;
+  --t3: #424C60;
   --green: #34C77B;
   --amber: #E09B3A;
   --red: #E05555;
   --blue: #4C8EE8;
+  --chip-g: rgba(52,199,123,0.13);
+  --chip-a: rgba(224,155,58,0.13);
+  --chip-r: rgba(224,85,85,0.13);
+  --chip-b: rgba(76,142,232,0.13);
+  --top-nav-bg: rgba(255,255,255,0.04);
+  --grid-hover: rgba(255,255,255,0.012);
+  --overlay-bg: rgba(0,0,0,0.6);
+}
+
+/* ── LIGHT MODE ────────────────── */
+body.light {
+  --bg: #F5F1E8;
+  --s1: #FFFFFF;
+  --s2: #EEE9DE;
+  --s3: #E3DDCF;
+  --s4: #D4CEBC;
+  --line: rgba(0,0,0,0.09);
+  --line2: rgba(0,0,0,0.17);
+  --t1: #18160F;
+  --t2: #5A5748;
+  --t3: #948E7A;
+  --green: #3B7545;
+  --amber: #9E6820;
+  --red: #B03838;
+  --blue: #3A6DB8;
+  --chip-g: rgba(59,117,69,0.13);
+  --chip-a: rgba(158,104,32,0.13);
+  --chip-r: rgba(176,56,56,0.13);
+  --chip-b: rgba(58,109,184,0.13);
+  --top-nav-bg: rgba(0,0,0,0.05);
+  --grid-hover: rgba(0,0,0,0.025);
+  --overlay-bg: rgba(0,0,0,0.35);
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -64,7 +98,7 @@ body {
 .top-nav {
   display: flex;
   gap: 2px;
-  background: rgba(255,255,255,0.04);
+  background: var(--top-nav-bg);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 3px;
@@ -304,10 +338,10 @@ body {
   font-size: 10.5px;
   font-weight: 600;
 }
-.chip.g { background: rgba(52,199,123,0.11); color: var(--green); }
-.chip.a { background: rgba(224,155,58,0.11); color: var(--amber); }
-.chip.r { background: rgba(224,85,85,0.11); color: var(--red); }
-.chip.b { background: rgba(76,142,232,0.11); color: var(--blue); }
+.chip.g { background: var(--chip-g); color: var(--green); }
+.chip.a { background: var(--chip-a); color: var(--amber); }
+.chip.r { background: var(--chip-r); color: var(--red); }
+.chip.b { background: var(--chip-b); color: var(--blue); }
 .chip.m { background: var(--s3); color: var(--t2); }
 
 /* ── PROGRESS ──────────────────── */
@@ -431,7 +465,7 @@ body {
 .gtbl td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 0; vertical-align: middle; }
 .gtbl td.rn { text-align: center; font-size: 10px; color: var(--t3); background: var(--s1); padding: 0 4px; width: 30px; cursor: pointer; border-right: 1px solid var(--line2); }
 .gtbl td.rn:hover { background: var(--s2); }
-.gtbl tr:hover td:not(.rn) { background: rgba(255,255,255,0.012); }
+.gtbl tr:hover td:not(.rn) { background: var(--grid-hover); }
 .gtbl tr.sel td { background: rgba(76,142,232,0.07) !important; }
 .gtbl tr.sel td.rn { background: rgba(76,142,232,0.14) !important; }
 .ci { width: 100%; height: 34px; background: transparent; border: none; outline: none; color: var(--t1); font-family: inherit; font-size: 12.5px; padding: 0 9px; }
@@ -484,7 +518,7 @@ body {
 @keyframes bop { 0%,80%,100%{transform:translateY(0);opacity:0.4} 40%{transform:translateY(-5px);opacity:1} }
 
 /* ── MODAL ─────────────────────── */
-.ov { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(6px); }
+.ov { position: fixed; inset: 0; background: var(--overlay-bg); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(6px); }
 .ov.on { display: flex; }
 .modal { background: var(--s1); border: 1px solid var(--line2); border-radius: 14px; width: 480px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
 .mh { padding: 16px 20px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
@@ -525,6 +559,38 @@ body {
 .color-swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s; flex-shrink: 0; }
 .color-swatch:hover { transform: scale(1.15); }
 .color-swatch.sel { border-color: #fff; }
+/* ── THEME TOGGLE ──────────────── */
+.theme-btn {
+  width: 29px; height: 29px; border-radius: 7px;
+  background: none; border: 1px solid var(--line);
+  color: var(--t2); cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 14px; transition: all 0.13s; flex-shrink: 0;
+}
+.theme-btn:hover { color: var(--t1); border-color: var(--line2); background: var(--s2); }
+/* ── THEME TOGGLE SWITCH ───────── */
+.theme-switch { display: flex; align-items: center; gap: 10px; }
+.tswitch { position: relative; width: 44px; height: 24px; }
+.tswitch input { opacity: 0; width: 0; height: 0; }
+.tswitch-track {
+  position: absolute; inset: 0;
+  background: var(--s3); border: 1px solid var(--line2);
+  border-radius: 12px; cursor: pointer; transition: background 0.2s;
+}
+.tswitch-track:before {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; left: 2px; top: 2px;
+  background: var(--t2); border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+.tswitch input:checked + .tswitch-track { background: rgba(76,142,232,0.25); border-color: var(--blue); }
+.tswitch input:checked + .tswitch-track:before { transform: translateX(20px); background: var(--blue); }
+/* ── SMOOTH TRANSITIONS ────────── */
+.topbar, .sidebar, .main, .view, .modal, .sc, .tbl-wrap,
+.tbl th, .tbl td, .ph, .toolbar, .ai-panel, .ai-head,
+.ai-input-row, .trow, .stage, .dstats, .ds {
+  transition: background-color 0.25s ease, border-color 0.2s ease, color 0.15s ease;
+}
 </style>
 </head>
 <body>
@@ -539,6 +605,7 @@ body {
     <button class="tnav"     onclick="nav('resources')">Resources</button>
   </div>
   <div class="top-right">
+    <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode"><span id="theme-icon">☀️</span></button>
     <button class="ai-btn" id="ai-toggle" onclick="toggleAI()"><div class="ai-dot"></div>Apex AI</button>
     <div class="avatar" id="user-avatar" onclick="toggleUserMenu()" style="position:relative;cursor:pointer">??</div>
   </div>
@@ -906,6 +973,18 @@ body {
       <!-- Appearance tab -->
       <div id="s-appear" style="display:none;padding:18px 20px;flex-direction:column;gap:18px">
         <div class="fg">
+          <label class="fl">Theme</label>
+          <div class="theme-switch" style="margin-top:8px">
+            <span style="font-size:14px">🌙</span>
+            <label class="tswitch">
+              <input type="checkbox" id="s-theme-check" onchange="toggleTheme()">
+              <span class="tswitch-track"></span>
+            </label>
+            <span style="font-size:14px">☀️</span>
+            <span id="s-theme-label" style="font-size:13px;color:var(--t2);margin-left:4px">Night Mode</span>
+          </div>
+        </div>
+        <div class="fg">
           <label class="fl">Accent Color</label>
           <div style="display:flex;gap:8px;margin-top:6px">
             <div class="color-swatch" data-color="#4C8EE8" style="background:#4C8EE8" onclick="pickColor(this)"></div>
@@ -948,7 +1027,27 @@ async function api(path, opts = {}) {
   return d;
 }
 
-// ═══════════ APP INIT ════════════════════════
+// ═══════════ APP INIT / THEME ════════════════
+function applyTheme(light) {
+  document.body.classList.toggle('light', light);
+  const icon = document.getElementById('theme-icon');
+  const chk  = document.getElementById('s-theme-check');
+  const lbl  = document.getElementById('s-theme-label');
+  if (icon) icon.textContent = light ? '🌙' : '☀️';
+  if (chk)  chk.checked = light;
+  if (lbl)  lbl.textContent = light ? 'Day Mode' : 'Night Mode';
+  localStorage.setItem('apex-theme', light ? 'light' : 'dark');
+}
+function toggleTheme() {
+  const isLight = document.body.classList.contains('light');
+  applyTheme(!isLight);
+  // Keep settings checkbox in sync when toggled from topbar button
+  const chk = document.getElementById('s-theme-check');
+  if (chk) chk.checked = !isLight;
+}
+// Apply saved theme immediately (before any render)
+(function() { applyTheme(localStorage.getItem('apex-theme') === 'light'); })();
+
 async function initApp() {
   try {
     const me = await api('/api/me');
@@ -1033,6 +1132,10 @@ function openSettings() {
   document.getElementById('s-email-lbl').textContent = u.email || '';
   const density = document.getElementById('s-density');
   if (density) density.value = u.settings?.density || 'comfortable';
+  const themeChk = document.getElementById('s-theme-check');
+  const themeLbl = document.getElementById('s-theme-label');
+  if (themeChk) themeChk.checked = document.body.classList.contains('light');
+  if (themeLbl) themeLbl.textContent = document.body.classList.contains('light') ? 'Day Mode' : 'Night Mode';
   const cur = u.settings?.accentColor || '#4C8EE8';
   document.querySelectorAll('.color-swatch').forEach(sw => {
     sw.classList.toggle('sel', sw.dataset.color === cur);
