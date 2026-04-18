@@ -7,25 +7,41 @@ const { setupAuth } = require('./auth');
 const apiRoutes = require('./routes/api');
 
 const app = express();
+
+// ── Trust Replit's HTTPS proxy (required for secure cookies in production) ──
+app.set('trust proxy', 1);
+
 app.use(express.json());
 
+// ── Derive app URL from environment ───────────────────────
+// REPLIT_DOMAINS is set in the deployed app (e.g. "apex-pm.replit.app")
+// REPLIT_DEV_DOMAIN is set in the dev environment
+if (!process.env.APP_URL) {
+  let domain;
+  if (process.env.REPLIT_DOMAINS) {
+    domain = process.env.REPLIT_DOMAINS.split(',')[0].trim();
+  } else {
+    domain = process.env.REPLIT_DEV_DOMAIN || 'localhost:5000';
+  }
+  process.env.APP_URL = `https://${domain}`;
+}
+
+console.log('APP_URL:', process.env.APP_URL);
+
 // ── Session middleware (stored in PostgreSQL) ─────────────
+const isProd = !!(process.env.REPLIT_DOMAINS || process.env.NODE_ENV === 'production');
+
 const sessionMiddleware = session({
   store: new PgSession({ pool, tableName: 'sessions', createTableIfMissing: true }),
   secret: process.env.SESSION_SECRET || 'apex-dev-secret-change-in-prod',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false,      // set true when behind HTTPS in production
+    secure: isProd,       // true in production (HTTPS), false in dev (HTTP)
+    sameSite: isProd ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
   }
 });
-
-// ── Derive app URL from environment ───────────────────────
-if (!process.env.APP_URL) {
-  const domain = process.env.REPLIT_DEV_DOMAIN || `localhost:5000`;
-  process.env.APP_URL = `https://${domain}`;
-}
 
 // ── Auth (Google OAuth + guards) ─────────────────────────
 setupAuth(app, sessionMiddleware);
