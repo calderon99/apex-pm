@@ -31,6 +31,10 @@
 - `POST /api/projects/:id/tasks` — create task
 - `PUT /api/tasks/:id` — update task
 - `DELETE /api/tasks/:id` — delete task
+- `GET /api/dashboards?section=<section>` — list saved dashboards for a section
+- `POST /api/dashboards` — create dashboard `{ section, name, widget_ids[], filters{} }`
+- `PUT /api/dashboards/:id` — update dashboard
+- `DELETE /api/dashboards/:id` — delete dashboard
 
 ## Database Schema
 
@@ -54,6 +58,24 @@ Belong to a project. Supports subtasks via self-referencing `parent_id`.
 
 ### invitations
 `id, invited_by → users, email, resource_type, resource_id, role, token, accepted_at, expires_at, created_at`
+
+### dashboards
+User-saved custom dashboards, per section. Auto-created via `CREATE TABLE IF NOT EXISTS` in `routes/api.js`.
+`id, user_id → users, section (portfolio|projects|tasks|resources), name, widget_ids (jsonb array), filters (jsonb), created_at`
+
+## Dashboard System
+Each main view (Portfolio, Projects, Tasks, Resources) has a left sub-panel (`db-panel`) showing:
+- "Overview" — the default list/table view for that section
+- Saved dashboards (user-created, persisted to DB)
+- "+ New Dashboard" button — opens widget picker modal
+
+Dashboards render a widget grid using real data from `D.projects` / tasks. Widgets per section:
+- **Portfolio**: Health Summary, By Initiative, Progress Overview, Stage Distribution
+- **Projects**: Status Breakdown, Project Progress, By Initiative, Owner Workload
+- **Tasks**: Task Status, Priority Breakdown, Assignee Load, Completion Rate
+- **Resources**: Team Utilization, Priority Mix, Workload Summary, Project Health Mix
+
+Charts are pure CSS horizontal bar charts (no external libraries). Color-coded by value.
 
 ## Architecture Roadmap
 1. ✅ Database schema (PostgreSQL)

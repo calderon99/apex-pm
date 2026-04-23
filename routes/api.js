@@ -299,4 +299,70 @@ function dbTaskToFE(t) {
   };
 }
 
+// ── Dashboards ────────────────────────────────────────────────────
+// Auto-create table on first load
+query(`CREATE TABLE IF NOT EXISTS dashboards (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  section VARCHAR(50) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  widget_ids JSONB DEFAULT '[]',
+  filters JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+)`).catch(err => console.error('dashboards table init:', err.message));
+
+router.get('/dashboards', auth, async (req, res) => {
+  const { section } = req.query;
+  try {
+    const params = [req.user.id];
+    let sql = 'SELECT * FROM dashboards WHERE user_id=$1';
+    if (section) { sql += ' AND section=$2'; params.push(section); }
+    sql += ' ORDER BY created_at ASC';
+    const result = await query(sql, params);
+    res.json({ dashboards: result.rows.map(d => ({
+      id: String(d.id), section: d.section, name: d.name,
+      widget_ids: d.widget_ids || [], filters: d.filters || {}
+    }))});
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/dashboards', auth, async (req, res) => {
+  const { section, name, widget_ids, filters } = req.body;
+  if (!section || !name) return res.status(400).json({ error: 'section and name required' });
+  try {
+    const result = await query(
+      `INSERT INTO dashboards (user_id, section, name, widget_ids, filters)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [req.user.id, section, name, JSON.stringify(widget_ids || []), JSON.stringify(filters || {})]
+    );
+    const d = result.rows[0];
+    res.json({ id: String(d.id), section: d.section, name: d.name,
+      widget_ids: d.widget_ids || [], filters: d.filters || {} });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/dashboards/:id', auth, async (req, res) => {
+  const { name, widget_ids, filters } = req.body;
+  try {
+    const cur = await query('SELECT * FROM dashboards WHERE id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+    if (!cur.rows.length) return res.status(404).json({ error: 'Not found' });
+    const c = cur.rows[0];
+    const result = await query(
+      `UPDATE dashboards SET name=$1, widget_ids=$2, filters=$3 WHERE id=$4 AND user_id=$5 RETURNING *`,
+      [name ?? c.name, JSON.stringify(widget_ids ?? c.widget_ids ?? []),
+       JSON.stringify(filters ?? c.filters ?? {}), req.params.id, req.user.id]
+    );
+    const d = result.rows[0];
+    res.json({ id: String(d.id), section: d.section, name: d.name,
+      widget_ids: d.widget_ids || [], filters: d.filters || {} });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/dashboards/:id', auth, async (req, res) => {
+  try {
+    await query('DELETE FROM dashboards WHERE id=$1 AND user_id=$2', [req.params.id, req.user.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;
