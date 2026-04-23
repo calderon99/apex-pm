@@ -26,8 +26,6 @@ if (!process.env.APP_URL) {
   process.env.APP_URL = `https://${domain}`;
 }
 
-console.log('APP_URL:', process.env.APP_URL);
-
 // ── Session middleware (stored in PostgreSQL) ─────────────
 const isProd = !!(process.env.REPLIT_DOMAINS || process.env.NODE_ENV === 'production');
 

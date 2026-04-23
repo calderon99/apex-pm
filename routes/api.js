@@ -311,8 +311,11 @@ query(`CREATE TABLE IF NOT EXISTS dashboards (
   created_at TIMESTAMPTZ DEFAULT NOW()
 )`).catch(err => console.error('dashboards table init:', err.message));
 
+const VALID_SECTIONS = new Set(['portfolio', 'projects', 'tasks', 'resources']);
+
 router.get('/dashboards', auth, async (req, res) => {
   const { section } = req.query;
+  if (section && !VALID_SECTIONS.has(section)) return res.status(400).json({ error: 'Invalid section' });
   try {
     const params = [req.user.id];
     let sql = 'SELECT * FROM dashboards WHERE user_id=$1';
@@ -329,6 +332,8 @@ router.get('/dashboards', auth, async (req, res) => {
 router.post('/dashboards', auth, async (req, res) => {
   const { section, name, widget_ids, filters } = req.body;
   if (!section || !name) return res.status(400).json({ error: 'section and name required' });
+  if (!VALID_SECTIONS.has(section)) return res.status(400).json({ error: 'Invalid section' });
+  if (!Array.isArray(widget_ids || [])) return res.status(400).json({ error: 'widget_ids must be an array' });
   try {
     const result = await query(
       `INSERT INTO dashboards (user_id, section, name, widget_ids, filters)
