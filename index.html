@@ -668,6 +668,9 @@ body.light {
 .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); }
 .bar-val { font-size: 12px; color: var(--t3); width: 30px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
+/* ── MOBILE BOTTOM TAB BAR ──────── */
+.mob-tabs { display: none; } /* hidden on desktop */
+
 /* ── WIDGET BUILDER ────────────── */
 .wb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .wb-chip {
@@ -679,6 +682,197 @@ body.light {
 .wb-chip.on { border-color: var(--blue); background: rgba(76,142,232,0.08); color: var(--t1); }
 .wb-chip .wb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--s4); }
 .wb-chip.on .wb-dot { background: var(--blue); }
+
+/* ══════════════════════════════════════════════════════
+   MOBILE  (≤ 768px)
+══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Layout ── */
+  .topbar { padding: 0 12px; gap: 0; }
+  .top-nav { display: none; }
+  .ai-btn  { display: none; }
+  .theme-btn { display: none; }
+  .sidebar { display: none; }
+
+  /* ── Shell / main push up for tab bar ── */
+  .shell { padding-bottom: 0; }
+  .main  { padding-bottom: 60px; }
+
+  /* ── Dashboard sub-panel hidden on mobile ── */
+  .db-panel { display: none; }
+  .view-body { flex-direction: column; }
+
+  /* ── Page header ── */
+  .ph {
+    padding: 10px 14px 9px;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  .ph-left { width: 100%; }
+  .ph-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .ph-actions .inp { flex: 1; min-width: 0; width: auto; }
+  .pt { font-size: 18px; }
+  .pm { font-size: 12px; }
+
+  /* ── Toolbar ── */
+  .toolbar { padding: 6px 12px; gap: 5px; flex-wrap: wrap; }
+  .tab { padding: 6px 10px; font-size: 13px; }
+
+  /* ── Scroll & pad ── */
+  .pad { padding: 12px 13px 26px; }
+  .scroll { -webkit-overflow-scrolling: touch; }
+
+  /* ── Stat cards: max 2-up ── */
+  .s3, .s4, .s5 { grid-template-columns: 1fr 1fr; }
+  .sc { border-radius: 10px; padding: 11px 12px; }
+  .sv { font-size: 22px; }
+
+  /* ── Tables: horizontal scroll ── */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tbl { font-size: 13.5px; }
+  .tbl th, .tbl td { padding: 8px 11px; white-space: nowrap; }
+
+  /* ── Inputs / controls ── */
+  .inp { width: 100%; }
+  .fi, .fsl { font-size: 16px; } /* prevents iOS zoom on focus */
+
+  /* ── Touch targets ── */
+  .btn { min-height: 36px; }
+  .trow { padding: 10px 13px; min-height: 52px; }
+
+  /* ── Stage gate ── */
+  .stages { margin: 0 12px; }
+  .stage { padding: 6px 8px; }
+  .stage-lbl { font-size: 9.5px; }
+  .stage-name { font-size: 12px; }
+
+  /* ── Detail stats: 2-up ── */
+  .dstats { grid-template-columns: 1fr 1fr; }
+
+  /* ── Spreadsheet horizontal scroll ── */
+  .go { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .gtbl th, .gtbl td { white-space: nowrap; }
+
+  /* ── AI Panel → bottom sheet ── */
+  .ai-panel {
+    position: fixed !important;
+    bottom: 60px !important;
+    left: 0 !important; right: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-height: 72vh;
+    border-left: none !important;
+    border-top: 1px solid var(--line);
+    border-radius: 16px 16px 0 0;
+    z-index: 300;
+    opacity: 0 !important;
+    transform: translateY(100%) !important;
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease !important;
+  }
+  .ai-panel.on {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+  .ai-head { padding: 10px 14px; }
+
+  /* ── AI panel drag handle ── */
+  .ai-panel::before {
+    content: '';
+    display: block;
+    width: 36px; height: 4px;
+    background: var(--line2);
+    border-radius: 2px;
+    margin: 8px auto 0;
+  }
+
+  /* ── Modals → bottom sheet ── */
+  .ov { align-items: flex-end; padding: 0; }
+  .modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+    margin: 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .modal-lg { width: 100vw !important; max-width: 100vw !important; }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes modalOut {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(30px); }
+  }
+
+  /* ── Modal header & footer padding ── */
+  .mh { padding: 14px 16px 12px; }
+  .mb { padding: 14px 16px; }
+  .mf { padding: 10px 16px; gap: 8px; }
+  .mf .btn { flex: 1; justify-content: center; }
+
+  /* ── Widget builder: 1-col on mobile ── */
+  .wb-grid { grid-template-columns: 1fr; }
+
+  /* ── Dashboard canvas ── */
+  .db-grid { grid-template-columns: 1fr; }
+  .db-canvas { padding: 12px 13px 24px; }
+  .db-canvas-title { font-size: 17px; }
+
+  /* ── Bottom tab bar ── */
+  .mob-tabs {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 60px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    background: var(--s1);
+    border-top: 1px solid var(--line);
+    z-index: 200;
+    backdrop-filter: blur(12px);
+  }
+  .mob-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--t3);
+    font-family: inherit;
+    padding: 5px 0 8px;
+    transition: color 0.12s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .mob-tab:active { transform: scale(0.92); }
+  .mob-tab.on { color: var(--blue); }
+  .mob-tab-ic { font-size: 20px; line-height: 1; }
+  .mob-tab-lbl {
+    font-size: 9.5px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+
+  /* ── Blockers for sidebar hover/dropdown states on mobile ── */
+  #user-menu { right: 10px !important; }
+
+  /* ── Report table ── */
+  .rpt-row { flex-wrap: wrap; }
+  .rpt-val { min-width: 0; }
+
+  /* ── AI chips: allow wrapping ── */
+  .ai-chips { padding: 0 12px 6px; }
+  .ai-chip { font-size: 12px; padding: 4px 9px; }
+}
 </style>
 </head>
 <body>
@@ -879,6 +1073,30 @@ body.light {
 </div>
 
 </div><!-- /shell -->
+
+<!-- MOBILE BOTTOM TAB BAR -->
+<div class="mob-tabs" id="mob-tabs">
+  <button class="mob-tab on" onclick="nav('portfolio')">
+    <span class="mob-tab-ic">◈</span>
+    <span class="mob-tab-lbl">Portfolio</span>
+  </button>
+  <button class="mob-tab" onclick="nav('projects')">
+    <span class="mob-tab-ic">◇</span>
+    <span class="mob-tab-lbl">Projects</span>
+  </button>
+  <button class="mob-tab" onclick="nav('tasks')">
+    <span class="mob-tab-ic">≡</span>
+    <span class="mob-tab-lbl">Tasks</span>
+  </button>
+  <button class="mob-tab" onclick="nav('resources')">
+    <span class="mob-tab-ic">◎</span>
+    <span class="mob-tab-lbl">Resources</span>
+  </button>
+  <button class="mob-tab ai-mob-tab" onclick="mobToggleAI()">
+    <span class="mob-tab-ic">✦</span>
+    <span class="mob-tab-lbl">AI</span>
+  </button>
+</div>
 
 <!-- DASHBOARD BUILDER MODAL -->
 <div class="ov" id="m-db-new">
@@ -2709,6 +2927,43 @@ nav = function(id) {
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ═══════════ MOBILE ═════════════════════════════════════════════
+
+// Sync the mobile bottom tab bar to the current section
+function syncMobTabs(id) {
+  const order = ['portfolio','projects','tasks','resources'];
+  document.querySelectorAll('.mob-tab:not(.ai-mob-tab)').forEach((btn, i) => {
+    btn.classList.toggle('on', order[i] === id);
+  });
+}
+
+// Toggle AI panel and sync the AI tab indicator
+function mobToggleAI() {
+  toggleAI();
+  const panel = document.getElementById('ai-panel');
+  document.querySelector('.ai-mob-tab')?.classList.toggle('on', panel?.classList.contains('on'));
+}
+
+// ── Extend the nav() wrapper to sync mobile tabs ───────────────────
+// Re-wrap the nav function (which was already wrapped for dashboards)
+// to additionally sync the mobile tab bar and auto-close AI on mobile.
+(function() {
+  const _prev = nav;
+  nav = function(id) {
+    // On mobile: close AI panel when switching sections
+    if (window.innerWidth <= 768) {
+      const panel = document.getElementById('ai-panel');
+      if (panel?.classList.contains('on')) {
+        panel.classList.remove('on');
+        document.getElementById('ai-toggle')?.classList.remove('on');
+        document.querySelector('.ai-mob-tab')?.classList.remove('on');
+      }
+    }
+    _prev(id);
+    syncMobTabs(id);
+  };
+})();
 
 // ═══════════ INIT ════════════════════════════
 // Hook task modal open to pre-populate project list
