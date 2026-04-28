@@ -927,6 +927,7 @@ body.light {
           <option value="Ops Excellence">Ops Excellence</option>
           <option value="Customer Experience">Customer Experience</option>
         </select>
+        <button class="btn btn-ghost" onclick="openPortfolioCreate()">+ New Portfolio</button>
         <button class="btn btn-primary" onclick="openModal('m-proj')">+ New Project</button>
       </div>
     </div>
@@ -1268,10 +1269,16 @@ body.light {
 <!-- PORTFOLIO EDIT MODAL -->
 <div class="ov" id="m-pfedit">
   <div class="modal" style="width:440px">
-    <div class="mh"><div class="mt">Edit Portfolio</div><button class="mc" onclick="closeModal('m-pfedit')">✕</button></div>
+    <div class="mh"><div class="mt" id="pfe-title">Edit Portfolio</div><button class="mc" onclick="closeModal('m-pfedit')">✕</button></div>
     <div class="mb">
       <div class="fg"><label class="fl">Portfolio Name</label><input class="fi" id="pfe-n" placeholder="Portfolio name…"></div>
       <div class="fg"><label class="fl">Description</label><textarea class="fta" id="pfe-desc" placeholder="What this portfolio covers…"></textarea></div>
+      <div class="fg">
+        <label class="fl">Parent Portfolio <span style="color:var(--t3);font-weight:400">(optional)</span></label>
+        <select class="sel" id="pfe-parent" style="width:100%">
+          <option value="">— None (top-level) —</option>
+        </select>
+      </div>
     </div>
     <div class="mf"><button class="btn btn-ghost" onclick="closeModal('m-pfedit')">Cancel</button><button class="btn btn-primary" onclick="savePortfolioEdit()">Save</button></div>
   </div>
@@ -1620,54 +1627,26 @@ function renderPF() {
   let ps = D.projects.filter(p => ini==='all'||p.ini===ini);
   const r = rAll(ps);
 
-  // Update header title to portfolio name
   const titleEl = document.getElementById('pf-title');
   if(titleEl) titleEl.textContent = D.portfolios.length===1 ? D.portfolios[0].name : 'All Portfolios';
-
-  // Update subtitle
-  const now = new Date(); const days = Math.floor((now - new Date(Math.max(...ps.flatMap(p=>p.tasks||[]).map(t=>0)))) / 86400000);
   document.getElementById('pf-pm').textContent = `${r.total} project${r.total!==1?'s':''} · ${r.totalTasks} task${r.totalTasks!==1?'s':''} · last updated today`;
 
-  // Group by portfolio
-  const portGroups = {};
-  ps.forEach(p => {
-    const key = p.portfolio || 'Unassigned';
-    const pid = p.portfolio_id || 'none';
-    if(!portGroups[key]) portGroups[key] = {name:key, pid, projects:[]};
-    portGroups[key].projects.push(p);
-  });
-
-  // Only show Blocked column if any project has blocked tasks
   const anyBlocked = ps.some(p => rP(p).blocked > 0);
 
-  let html = `<div class="pad">
-    <div class="stats s4" style="margin-bottom:20px">
-      <div class="sc"><div class="sv">${r.total}</div><div class="sl">Total Projects</div></div>
-      <div class="sc"><div class="sv g">${r.onTrack}</div><div class="sl">On Track</div></div>
-      <div class="sc"><div class="sv a">${r.atRisk+r.offTrack}</div><div class="sl">Needs Attention</div></div>
-      <div class="sc"><div class="sv b">${r.pct}%</div><div class="sl">Avg Progress</div></div>
-    </div>`;
+  // Build portfolio tree
+  const topLevel = D.portfolios.filter(pf => !pf.parent_id);
+  const childrenOf = {};
+  D.portfolios.forEach(pf => {
+    if(pf.parent_id){ if(!childrenOf[pf.parent_id]) childrenOf[pf.parent_id]=[]; childrenOf[pf.parent_id].push(pf); }
+  });
+  const projByPort = {};
+  ps.forEach(p => { const pid = p.portfolio_id||'none'; if(!projByPort[pid]) projByPort[pid]=[]; projByPort[pid].push(p); });
+  const assignedIds = new Set(D.portfolios.map(pf=>pf.id));
 
-  Object.values(portGroups).forEach(grp => {
-    const gR = rAll(grp.projects);
-    const port = D.portfolios.find(pf => String(pf.id) === String(grp.pid));
-    html += `<div style="margin-bottom:28px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:13px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase">${grp.name}</span>
-          <span style="font-size:13.5px;color:var(--t3)">${gR.total} project${gR.total!==1?'s':''} · ${gR.totalTasks} task${gR.totalTasks!==1?'s':''}</span>
-        </div>
-        ${port?`<button class="btn btn-ghost" style="font-size:13px;padding:3px 10px" onclick="openPortfolioEdit('${port.id}')">Edit</button>`:''}
-      </div>
-      <div class="tbl-wrap">
-        <table class="tbl"><thead><tr>
-          <th>Project</th><th>Status</th><th>Owner</th>
-          ${anyBlocked?'<th>Blocked</th>':''}
-          <th>Progress</th><th>Due</th>
-        </tr></thead><tbody>`;
-    grp.projects.forEach(p => {
-      const pr = rP(p);
-      html += `<tr class="cl" onclick="loadP('${p.id}')">
+  function pfTableRows(projs) {
+    return projs.map(p => {
+      const pr=rP(p);
+      return `<tr class="cl" onclick="loadP('${p.id}')">
         <td><div style="display:flex;align-items:center;gap:8px">
           <span style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></span>
           <span style="font-weight:500;font-size:15px">${p.name}</span>
@@ -1678,15 +1657,73 @@ function renderPF() {
         <td style="min-width:130px">${ibar(pr.pct)}</td>
         <td class="cm">${p.due||'—'}</td>
       </tr>`;
-    });
-    html += `</tbody></table></div></div>`;
-  });
+    }).join('');
+  }
 
-  if(Object.keys(portGroups).length===0) {
+  function renderPortGroup(port, depth) {
+    const projs = projByPort[port.id]||[];
+    const children = childrenOf[port.id]||[];
+    const gR = rAll(projs);
+    const indent = depth>0 ? 'margin-left:24px;padding-left:16px;border-left:2px solid var(--line);' : '';
+    const arrow = depth>0 ? '<span style="color:var(--t3);font-size:11px;margin-right:2px">↳</span>' : '';
+    let h = `<div style="margin-bottom:${depth>0?'18px':'28px'};${indent}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          ${arrow}<span style="font-size:13px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase">${port.name}</span>
+          <span style="font-size:13px;color:var(--t3)">${gR.total} project${gR.total!==1?'s':''} · ${gR.totalTasks} task${gR.totalTasks!==1?'s':''}</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost" style="font-size:12px;padding:3px 9px" onclick="openPortfolioCreate('${port.id}')">+ Sub-portfolio</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:3px 9px" onclick="openPortfolioEdit('${port.id}')">Edit</button>
+        </div>
+      </div>`;
+    if(projs.length>0){
+      h += `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Project</th><th>Status</th><th>Owner</th>
+        ${anyBlocked?'<th>Blocked</th>':''}
+        <th>Progress</th><th>Due</th>
+      </tr></thead><tbody>${pfTableRows(projs)}</tbody></table></div>`;
+    } else if(children.length===0){
+      h += `<div style="color:var(--t3);font-size:14px;padding:8px 0 4px">No projects in this portfolio.</div>`;
+    }
+    children.forEach(child => { h += renderPortGroup(child, depth+1); });
+    h += `</div>`;
+    return h;
+  }
+
+  let html = `<div class="pad">
+    <div class="stats s4" style="margin-bottom:20px">
+      <div class="sc"><div class="sv">${r.total}</div><div class="sl">Total Projects</div></div>
+      <div class="sc"><div class="sv g">${r.onTrack}</div><div class="sl">On Track</div></div>
+      <div class="sc"><div class="sv a">${r.atRisk+r.offTrack}</div><div class="sl">Needs Attention</div></div>
+      <div class="sc"><div class="sv b">${r.pct}%</div><div class="sl">Avg Progress</div></div>
+    </div>`;
+
+  topLevel.forEach(port => { html += renderPortGroup(port, 0); });
+
+  // Unassigned projects (no portfolio or unknown portfolio)
+  const unassigned = ps.filter(p => !p.portfolio_id || !assignedIds.has(p.portfolio_id));
+  if(unassigned.length>0){
+    const gR=rAll(unassigned);
+    html += `<div style="margin-bottom:28px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase">Unassigned</span>
+        <span style="font-size:13px;color:var(--t3)">${gR.total} project${gR.total!==1?'s':''}</span>
+      </div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Project</th><th>Status</th><th>Owner</th>
+        ${anyBlocked?'<th>Blocked</th>':''}
+        <th>Progress</th><th>Due</th>
+      </tr></thead><tbody>${pfTableRows(unassigned)}</tbody></table></div>
+    </div>`;
+  }
+
+  if(D.portfolios.length===0 && ps.length===0){
     html += `<div style="text-align:center;padding:60px 20px;color:var(--t3)">
       <div style="font-size:34px;margin-bottom:12px">📂</div>
-      <div style="font-size:17px;font-weight:600;margin-bottom:6px">No projects yet</div>
-      <div style="font-size:15px;margin-bottom:18px">Create your first project to get started.</div>
+      <div style="font-size:17px;font-weight:600;margin-bottom:6px">No portfolios yet</div>
+      <div style="font-size:15px;margin-bottom:18px">Create your first portfolio to organise projects.</div>
+      <button class="btn btn-ghost" onclick="openPortfolioCreate()" style="margin-right:8px">+ New Portfolio</button>
       <button class="btn btn-primary" onclick="openModal('m-proj')">+ New Project</button>
     </div>`;
   }
@@ -1990,7 +2027,12 @@ async function executeAIAction(action){
         const name=action.name?.trim();
         if(!name){toast('Portfolio name required');break;}
         try{
-          const port=await api('/api/portfolios',{method:'POST',body:JSON.stringify({name,description:action.description||''})});
+          let parent_id=null;
+          if(action.parent_portfolio){
+            const par=D.portfolios.find(p=>p.name.toLowerCase()===action.parent_portfolio.toLowerCase());
+            if(par) parent_id=par.id;
+          }
+          const port=await api('/api/portfolios',{method:'POST',body:JSON.stringify({name,description:action.description||'',parent_id})});
           D.portfolios.push(port);
           toast(`Portfolio "${port.name}" created`);
           nav('portfolio');renderPF();buildSB(curView);
@@ -2373,23 +2415,52 @@ async function saveProjectEdit(){
 
 // ═══════════ PORTFOLIO EDIT ══════════════════
 let editPortfolioId=null;
+function pfParentOpts(excludeId){
+  const sel=document.getElementById('pfe-parent');
+  sel.innerHTML='<option value="">— None (top-level) —</option>';
+  D.portfolios.forEach(p=>{
+    if(p.id===excludeId)return;
+    const o=document.createElement('option');
+    o.value=p.id; o.textContent=p.name; sel.appendChild(o);
+  });
+}
+function openPortfolioCreate(parentId){
+  editPortfolioId=null;
+  document.getElementById('pfe-title').textContent='New Portfolio';
+  document.getElementById('pfe-n').value='';
+  document.getElementById('pfe-desc').value='';
+  pfParentOpts(null);
+  if(parentId) document.getElementById('pfe-parent').value=parentId;
+  openModal('m-pfedit');
+}
 function openPortfolioEdit(portId){
   const port=D.portfolios.find(p=>p.id===portId);
   if(!port)return;
   editPortfolioId=portId;
+  document.getElementById('pfe-title').textContent='Edit Portfolio';
   document.getElementById('pfe-n').value=port.name||'';
   document.getElementById('pfe-desc').value=port.description||'';
+  pfParentOpts(portId);
+  document.getElementById('pfe-parent').value=port.parent_id||'';
   openModal('m-pfedit');
 }
 async function savePortfolioEdit(){
-  const port=D.portfolios.find(p=>p.id===editPortfolioId);
-  if(!port)return;
   const name=document.getElementById('pfe-n').value.trim();
   if(!name){toast('Portfolio name required');return;}
+  const description=document.getElementById('pfe-desc').value;
+  const parent_id=document.getElementById('pfe-parent').value||null;
   try{
-    const saved=await api(`/api/portfolios/${editPortfolioId}`,{method:'PUT',body:JSON.stringify({name,description:document.getElementById('pfe-desc').value})});
-    Object.assign(port,saved);
-    closeModal('m-pfedit');toast('Portfolio saved');
+    if(editPortfolioId===null){
+      const created=await api('/api/portfolios',{method:'POST',body:JSON.stringify({name,description,parent_id})});
+      D.portfolios.push(created);
+      closeModal('m-pfedit');toast(`Portfolio "${created.name}" created`);
+    } else {
+      const port=D.portfolios.find(p=>p.id===editPortfolioId);
+      if(!port)return;
+      const saved=await api(`/api/portfolios/${editPortfolioId}`,{method:'PUT',body:JSON.stringify({name,description,parent_id})});
+      Object.assign(port,saved);
+      closeModal('m-pfedit');toast('Portfolio saved');
+    }
     renderPF();buildSB(curView);
   }catch(e){toast('Error: '+e.message);}
 }
@@ -2410,7 +2481,7 @@ async function sendAI(){
   const ctx=`You are Apex AI inside Apex, a project management platform. The user is ${userName}. You have full read/write access — you can create portfolios, projects, and tasks, and update tasks directly in the database.
 
 PORTFOLIOS (${D.portfolios.length})
-${D.portfolios.map(pt=>`• ${pt.name}${pt.description?' — '+pt.description:''}`).join('\n')||'(none yet)'}
+${D.portfolios.map(pt=>{const par=pt.parent_id?D.portfolios.find(x=>x.id===pt.parent_id):null;return`• ${pt.name}${par?' (sub-portfolio of '+par.name+')':''}${pt.description?' — '+pt.description:''}`;}).join('\n')||'(none yet)'}
 
 PORTFOLIO SUMMARY
 ${r.total} projects | ${r.onTrack} on-track | ${r.atRisk} at-risk | ${r.offTrack} off-track | ${r.pct}% avg progress | ${r.totalTasks} tasks | ${r.done} complete | ${r.blocked} blocked
@@ -2432,7 +2503,7 @@ You may include MULTIPLE action blocks in one response (e.g. to create a project
 
 Available actions:
 - navigate:         {"type":"navigate","view":"portfolio"|"projects"|"tasks"|"resources"}
-- create_portfolio: {"type":"create_portfolio","name":"Portfolio Name","description":"optional"}
+- create_portfolio: {"type":"create_portfolio","name":"Portfolio Name","description":"optional","parent_portfolio":"exact parent portfolio name (optional — omit for top-level)"}
 - create_project:   {"type":"create_project","name":"Project Name","initiative":"initiative","status":"On Track|At Risk|Off Track","owner":"name","due":"YYYY-MM-DD","description":"optional","portfolio":"exact portfolio name (optional — defaults to first portfolio)","color":"#hex (optional)"}
 - add_task:         {"type":"add_task","project":"exact project name","name":"Task Name","assignee":"name","priority":"Critical|High|Medium|Low","due":"YYYY-MM-DD or TBD","status":"Not Started|In Progress|Blocked"}
 - update_portfolio: {"type":"update_portfolio","portfolio":"exact portfolio name","name":"new name (optional)","description":"new description (optional)"}

@@ -38,26 +38,31 @@ router.get('/portfolios', auth, async (req, res) => {
       'SELECT * FROM portfolios WHERE owner_id=$1 ORDER BY created_at ASC',
       [req.user.id]
     );
-    res.json({ portfolios: result.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '' })) });
+    res.json({ portfolios: result.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '', parent_id: p.parent_id ? String(p.parent_id) : null })) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/portfolios', auth, async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, parent_id } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
   try {
+    let resolvedParent = null;
+    if (parent_id) {
+      const chk = await query('SELECT id FROM portfolios WHERE id=$1 AND owner_id=$2', [parent_id, req.user.id]);
+      if (chk.rows.length) resolvedParent = chk.rows[0].id;
+    }
     const result = await query(
-      `INSERT INTO portfolios (owner_id, name, description) VALUES ($1,$2,$3) RETURNING *`,
-      [req.user.id, name, description || '']
+      `INSERT INTO portfolios (owner_id, name, description, parent_id) VALUES ($1,$2,$3,$4) RETURNING *`,
+      [req.user.id, name, description || '', resolvedParent]
     );
     const p = result.rows[0];
     await query(
       `INSERT INTO memberships (user_id, resource_type, resource_id, role) VALUES ($1,'portfolio',$2,'owner')`,
       [req.user.id, p.id]
     );
-    res.json({ id: String(p.id), name: p.name, description: p.description || '' });
+    res.json({ id: String(p.id), name: p.name, description: p.description || '', parent_id: p.parent_id ? String(p.parent_id) : null });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -84,7 +89,7 @@ router.get('/projects', auth, async (req, res) => {
     if (!projects.rows.length) {
       return res.json({
         projects: [],
-        portfolios: portfolios.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '' }))
+        portfolios: portfolios.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '', parent_id: p.parent_id ? String(p.parent_id) : null }))
       });
     }
 
@@ -109,7 +114,7 @@ router.get('/projects', auth, async (req, res) => {
 
     res.json({
       projects: result,
-      portfolios: portfolios.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '' }))
+      portfolios: portfolios.rows.map(p => ({ id: String(p.id), name: p.name, description: p.description || '', parent_id: p.parent_id ? String(p.parent_id) : null }))
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -191,13 +196,22 @@ router.put('/portfolios/:id', auth, async (req, res) => {
     const name        = req.body.name        ?? c.name;
     const description = req.body.description ?? c.description;
     const settings    = req.body.settings != null ? JSON.stringify(req.body.settings) : JSON.stringify(c.settings || {});
+    let parent_id = c.parent_id;
+    if ('parent_id' in req.body) {
+      if (!req.body.parent_id) {
+        parent_id = null;
+      } else if (String(req.body.parent_id) !== String(req.params.id)) {
+        const chk = await query('SELECT id FROM portfolios WHERE id=$1 AND owner_id=$2', [req.body.parent_id, req.user.id]);
+        if (chk.rows.length) parent_id = chk.rows[0].id;
+      }
+    }
     const result = await query(
-      `UPDATE portfolios SET name=$1, description=$2, settings=$3, updated_at=NOW()
-       WHERE id=$4 AND owner_id=$5 RETURNING *`,
-      [name, description || '', settings, req.params.id, req.user.id]
+      `UPDATE portfolios SET name=$1, description=$2, settings=$3, parent_id=$4, updated_at=NOW()
+       WHERE id=$5 AND owner_id=$6 RETURNING *`,
+      [name, description || '', settings, parent_id, req.params.id, req.user.id]
     );
     const p = result.rows[0];
-    res.json({ id: String(p.id), name: p.name, description: p.description || '', settings: p.settings || {} });
+    res.json({ id: String(p.id), name: p.name, description: p.description || '', parent_id: p.parent_id ? String(p.parent_id) : null, settings: p.settings || {} });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -298,6 +312,10 @@ function dbTaskToFE(t) {
     cf: t.custom_fields || {},
   };
 }
+
+// ── Migrations ────────────────────────────────────────────────────
+query(`ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES portfolios(id) ON DELETE SET NULL`)
+  .catch(err => console.error('portfolios parent_id migration:', err.message));
 
 // ── Dashboards ────────────────────────────────────────────────────
 // Auto-create table on first load
