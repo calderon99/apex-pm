@@ -330,6 +330,22 @@ body.light {
 .cp { color: var(--t1); font-weight: 500; font-size: 15px; }
 .cm { color: var(--t3); font-size: 13.5px; font-variant-numeric: tabular-nums; }
 
+/* ── Kebab / row action menu ─────── */
+.kw { position: relative; display: inline-block; }
+.kb { background: none; border: none; color: var(--t3); font-size: 18px; cursor: pointer; padding: 2px 7px; border-radius: 6px; line-height: 1; opacity: 0; transition: opacity .12s, background .12s; }
+tr:hover .kb, .kb:focus, .kb.open { opacity: 1; }
+.kb:hover { background: var(--s2); color: var(--t1); }
+.kmenu { position: fixed; background: var(--s1); border: 1px solid var(--line2); border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,.45); z-index: 2000; min-width: 170px; padding: 5px; display: none; }
+.kmenu.open { display: block; }
+.kmenu-item { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 7px; cursor: pointer; font-size: 14px; color: var(--t2); transition: background .1s; white-space: nowrap; }
+.kmenu-item:hover { background: var(--s2); color: var(--t1); }
+.kmenu-item.danger { color: var(--red); }
+.kmenu-item.danger:hover { background: rgba(224,85,85,.12); }
+.kmenu-sep { height: 1px; background: var(--line); margin: 4px 0; }
+
+/* ── Archive & Trash badge ── */
+.exp-badge { display: inline-block; background: rgba(224,85,85,.15); color: var(--red); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px; margin-left: 8px; }
+
 /* ── CHIPS ─────────────────────── */
 .chip {
   display: inline-flex;
@@ -954,6 +970,7 @@ body.light {
           <option value="At Risk">At Risk</option>
           <option value="Off Track">Off Track</option>
         </select>
+        <button class="btn btn-ghost" onclick="openArchiveTrash()">Archive & Trash</button>
         <button class="btn btn-ghost" onclick="openModal('m-proj')">+ Project</button>
       </div>
     </div>
@@ -1266,6 +1283,41 @@ body.light {
   </div>
 </div>
 
+<!-- ARCHIVE & TRASH MODAL -->
+<div class="ov" id="m-archive-trash">
+  <div class="modal" style="width:660px;max-height:82vh">
+    <div class="mh">
+      <div>
+        <div class="mt" id="at-title">Archive & Trash</div>
+        <div style="font-size:13px;color:var(--t3);margin-top:2px" id="at-sub">Archived projects are kept permanently. Deleted projects are removed after 30 days.</div>
+      </div>
+      <button class="mc" onclick="closeModal('m-archive-trash')">✕</button>
+    </div>
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--line);padding:0 20px;flex-shrink:0">
+      <button class="tab on" id="at-tab-a" onclick="switchATTab('archive')">Archive</button>
+      <button class="tab" id="at-tab-t" onclick="switchATTab('trash')">Trash</button>
+    </div>
+    <div class="mb" style="flex:1;overflow-y:auto;padding:16px 20px" id="at-body">
+      <div style="text-align:center;color:var(--t3);padding:40px 0">Loading…</div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('m-archive-trash')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="ov" id="m-confirm">
+  <div class="modal" style="width:400px">
+    <div class="mh"><div class="mt" id="confirm-title">Confirm</div><button class="mc" onclick="closeModal('m-confirm')">✕</button></div>
+    <div class="mb"><div style="font-size:15px;color:var(--t2);line-height:1.6" id="confirm-msg"></div></div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeModal('m-confirm')">Cancel</button>
+      <button class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <!-- PORTFOLIO EDIT MODAL -->
 <div class="ov" id="m-pfedit">
   <div class="modal" style="width:440px">
@@ -1286,6 +1338,7 @@ body.light {
 
 <input type="file" id="fi-input" accept=".csv,.xlsx,.xls,.tsv" style="display:none" onchange="handleFile(this)">
 <div id="toast"></div>
+<div class="kmenu" id="kmenu"></div>
 
 <!-- PROFILE SETUP MODAL (first login) -->
 <div class="ov" id="m-setup">
@@ -1656,6 +1709,7 @@ function renderPF() {
         ${anyBlocked?`<td>${pr.blocked>0?`<span style="color:var(--red);font-size:14px;font-weight:600">${pr.blocked}</span>`:'<span class="cm">—</span>'}</td>`:''}
         <td style="min-width:130px">${ibar(pr.pct)}</td>
         <td class="cm">${p.due||'—'}</td>
+        <td onclick="event.stopPropagation()"><button class="kb" onclick="openProjMenu('${p.id}',this)">⋯</button></td>
       </tr>`;
     }).join('');
   }
@@ -1681,7 +1735,7 @@ function renderPF() {
       h += `<div class="tbl-wrap"><table class="tbl"><thead><tr>
         <th>Project</th><th>Status</th><th>Owner</th>
         ${anyBlocked?'<th>Blocked</th>':''}
-        <th>Progress</th><th>Due</th>
+        <th>Progress</th><th>Due</th><th style="width:36px"></th>
       </tr></thead><tbody>${pfTableRows(projs)}</tbody></table></div>`;
     } else if(children.length===0){
       h += `<div style="color:var(--t3);font-size:14px;padding:8px 0 4px">No projects in this portfolio.</div>`;
@@ -1713,7 +1767,7 @@ function renderPF() {
       <div class="tbl-wrap"><table class="tbl"><thead><tr>
         <th>Project</th><th>Status</th><th>Owner</th>
         ${anyBlocked?'<th>Blocked</th>':''}
-        <th>Progress</th><th>Due</th>
+        <th>Progress</th><th>Due</th><th style="width:36px"></th>
       </tr></thead><tbody>${pfTableRows(unassigned)}</tbody></table></div>
     </div>`;
   }
@@ -1751,10 +1805,10 @@ function renderPJ() {
       <div class="sc"><div class="sv b">${r.pct}%</div><div class="sl">Avg</div></div>
     </div>
     <div class="tbl-wrap">
-      <table class="tbl"><thead><tr><th>Project</th><th>Initiative</th><th>Status</th><th>Owner</th><th>Tasks</th><th>Progress</th><th>Due</th></tr></thead><tbody>`;
+      <table class="tbl"><thead><tr><th>Project</th><th>Initiative</th><th>Status</th><th>Owner</th><th>Tasks</th><th>Progress</th><th>Due</th><th style="width:36px"></th></tr></thead><tbody>`;
   Object.entries(grps).forEach(([ini,gps]) => {
     const gR = rAll(gps);
-    html += `<tr class="gr"><td colspan="7" style="padding:7px 14px"><div style="display:flex;justify-content:space-between"><span class="gl">${ini}</span><span class="cm">${gR.total} projects · ${gR.pct}% avg</span></div></td></tr>`;
+    html += `<tr class="gr"><td colspan="8" style="padding:7px 14px"><div style="display:flex;justify-content:space-between"><span class="gl">${ini}</span><span class="cm">${gR.total} projects · ${gR.pct}% avg</span></div></td></tr>`;
     gps.forEach(p => {
       const pr = rP(p);
       html += `<tr class="cl" onclick="loadP('${p.id}')">
@@ -1763,9 +1817,10 @@ function renderPJ() {
         <td class="cm">${pr.done}/${pr.total}</td>
         <td style="min-width:100px">${ibar(pr.pct)}</td>
         <td class="cm">${p.due}</td>
+        <td onclick="event.stopPropagation()"><button class="kb" onclick="openProjMenu('${p.id}',this)">⋯</button></td>
       </tr>`;
     });
-    html += `<tr class="rup"><td colspan="7" style="padding:5px 14px 5px 22px">↳ ${gR.pct}% avg · ${gR.onTrack}/${gR.total} on track · ${gR.blocked} blocked</td></tr>`;
+    html += `<tr class="rup"><td colspan="8" style="padding:5px 14px 5px 22px">↳ ${gR.pct}% avg · ${gR.onTrack}/${gR.total} on track · ${gR.blocked} blocked</td></tr>`;
   });
   html += `</tbody></table></div></div>`;
   document.getElementById('pj-body').innerHTML = html;
@@ -2463,6 +2518,175 @@ async function savePortfolioEdit(){
     }
     renderPF();buildSB(curView);
   }catch(e){toast('Error: '+e.message);}
+}
+
+// ═══════════ PROJECT MENU (kebab) ════════════
+let _pmId=null;
+function openProjMenu(id, btn){
+  _pmId=id;
+  const m=document.getElementById('kmenu');
+  const r=btn.getBoundingClientRect();
+  m.innerHTML=`
+    <div class="kmenu-item" onclick="archiveProj('${id}')"><span style="font-size:16px">📦</span> Archive</div>
+    <div class="kmenu-sep"></div>
+    <div class="kmenu-item danger" onclick="trashProj('${id}')"><span style="font-size:16px">🗑</span> Move to Trash</div>`;
+  m.style.top=(r.bottom+4)+'px';
+  m.style.left=Math.min(r.left, window.innerWidth-180)+'px';
+  m.classList.add('open');
+  btn.classList.add('open');
+  setTimeout(()=>document.addEventListener('click', closeProjMenu, {once:true}), 0);
+}
+function closeProjMenu(){
+  document.getElementById('kmenu').classList.remove('open');
+  document.querySelectorAll('.kb.open').forEach(b=>b.classList.remove('open'));
+}
+
+function showConfirm(title, msg, onOk){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').innerHTML=msg;
+  const btn=document.getElementById('confirm-ok');
+  const clone=btn.cloneNode(true); btn.parentNode.replaceChild(clone,btn);
+  clone.onclick=()=>{closeModal('m-confirm');onOk();};
+  openModal('m-confirm');
+}
+
+async function archiveProj(id){
+  closeProjMenu();
+  const p=D.projects.find(x=>x.id===id);
+  if(!p)return;
+  showConfirm('Archive Project',
+    `Archive <strong>${p.name}</strong>?<br><br>The project and all its tasks will be moved to the Archive. You can restore it any time.`,
+    async ()=>{
+      try{
+        await api(`/api/projects/${id}/archive`,{method:'POST'});
+        D.projects=D.projects.filter(x=>x.id!==id);
+        if(D.cur?.id===id){D.cur=null;nav('projects');}
+        renderPF();renderPJ();buildSB(curView);
+        toast(`"${p.name}" archived`);
+      }catch(e){toast('Error: '+e.message);}
+    });
+}
+
+async function trashProj(id){
+  closeProjMenu();
+  const p=D.projects.find(x=>x.id===id);
+  if(!p)return;
+  showConfirm('Move to Trash',
+    `Move <strong>${p.name}</strong> to Trash?<br><br>It will be permanently deleted after <strong>30 days</strong>. You can restore it before then.`,
+    async ()=>{
+      try{
+        await api(`/api/projects/${id}/trash`,{method:'POST'});
+        D.projects=D.projects.filter(x=>x.id!==id);
+        if(D.cur?.id===id){D.cur=null;nav('projects');}
+        renderPF();renderPJ();buildSB(curView);
+        toast(`"${p.name}" moved to Trash`);
+      }catch(e){toast('Error: '+e.message);}
+    });
+}
+
+// ═══════════ ARCHIVE & TRASH VIEWER ══════════
+let _atTab='archive';
+function openArchiveTrash(){
+  _atTab='archive';
+  document.getElementById('at-tab-a').classList.add('on');
+  document.getElementById('at-tab-t').classList.remove('on');
+  openModal('m-archive-trash');
+  loadATContent('archive');
+}
+function switchATTab(tab){
+  _atTab=tab;
+  document.getElementById('at-tab-a').classList.toggle('on',tab==='archive');
+  document.getElementById('at-tab-t').classList.toggle('on',tab==='trash');
+  loadATContent(tab);
+}
+async function loadATContent(tab){
+  const body=document.getElementById('at-body');
+  body.innerHTML='<div style="text-align:center;color:var(--t3);padding:40px 0">Loading…</div>';
+  try{
+    if(tab==='archive'){
+      const data=await api('/api/archived-projects');
+      renderATList(body, data.archived||[], 'archive');
+    } else {
+      const data=await api('/api/deleted-projects');
+      renderATList(body, data.deleted||[], 'trash');
+    }
+  }catch(e){body.innerHTML=`<div style="color:var(--red);padding:20px">${e.message}</div>`;}
+}
+function renderATList(body, items, type){
+  if(!items.length){
+    const icon=type==='archive'?'📦':'🗑';
+    const label=type==='archive'?'archive':'trash';
+    body.innerHTML=`<div style="text-align:center;color:var(--t3);padding:48px 0">
+      <div style="font-size:32px;margin-bottom:10px">${icon}</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px">Nothing in the ${label}</div>
+      <div style="font-size:14px">Archived or deleted projects will appear here.</div>
+    </div>`;
+    return;
+  }
+  let html='';
+  items.forEach(item=>{
+    const p=item.project||{};
+    const taskCount=(item.tasks||[]).length;
+    const dateStr=type==='archive'
+      ? 'Archived '+fmtAgo(item.archived_at)
+      : `Deleted ${fmtAgo(item.deleted_at)} · <span class="exp-badge">Expires ${fmtExpiry(item.expires_at)}</span>`;
+    const colorDot=p.color||'#4C8EE8';
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--line)">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span style="width:9px;height:9px;border-radius:50%;background:${colorDot};flex-shrink:0"></span>
+          <span style="font-weight:600;font-size:15px;color:var(--t1)">${p.name||'Untitled'}</span>
+          <span class="cm" style="font-size:13px">${p.portfolio_name||p.portfolio||''}</span>
+        </div>
+        <div style="font-size:13px;color:var(--t3);padding-left:17px">${dateStr} · ${taskCount} task${taskCount!==1?'s':''}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;margin-left:16px">
+        <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px" onclick="restoreATItem('${item.id}','${type}')">Restore</button>
+        <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px;color:var(--red);border-color:var(--red)" onclick="deleteATItem('${item.id}','${type}')">Delete</button>
+      </div>
+    </div>`;
+  });
+  body.innerHTML=html;
+}
+function fmtAgo(iso){
+  if(!iso)return'';
+  const d=new Date(iso);const now=new Date();
+  const days=Math.floor((now-d)/86400000);
+  if(days===0)return'today';if(days===1)return'yesterday';if(days<7)return days+'d ago';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function fmtExpiry(iso){
+  if(!iso)return'';
+  const d=new Date(iso);const now=new Date();
+  const days=Math.ceil((d-now)/86400000);
+  if(days<=0)return'soon';if(days===1)return'in 1 day';if(days<7)return`in ${days} days`;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+async function restoreATItem(id, type){
+  try{
+    const endpoint=type==='archive'?`/api/archived-projects/${id}/restore`:`/api/deleted-projects/${id}/restore`;
+    await api(endpoint,{method:'POST'});
+    toast('Project restored');
+    // Reload data
+    const data=await api('/api/projects');
+    D.projects=data.projects||[];
+    if(data.portfolios) D.portfolios=data.portfolios;
+    renderPF();renderPJ();buildSB(curView);
+    loadATContent(_atTab);
+  }catch(e){toast('Error: '+e.message);}
+}
+async function deleteATItem(id, type){
+  const label=type==='archive'?'archive':'trash';
+  showConfirm('Permanently Delete',
+    `Permanently delete this project?<br><br>This cannot be undone. All tasks will be lost.`,
+    async()=>{
+      try{
+        const endpoint=type==='archive'?`/api/archived-projects/${id}`:`/api/deleted-projects/${id}`;
+        await api(endpoint,{method:'DELETE'});
+        toast('Permanently deleted');
+        loadATContent(_atTab);
+      }catch(e){toast('Error: '+e.message);}
+    });
 }
 
 // ═══════════ AI ═════════════════════════════

@@ -227,6 +227,175 @@ router.delete('/projects/:id', auth, async (req, res) => {
   }
 });
 
+// ── Archive & Trash ────────────────────────────────────────────────
+async function snapshotProject(projectId, ownerId) {
+  const proj = await query('SELECT * FROM projects WHERE id=$1 AND owner_id=$2', [projectId, ownerId]);
+  if (!proj.rows.length) return null;
+  const tasks = await query('SELECT * FROM tasks WHERE project_id=$1 ORDER BY sort_order ASC, created_at ASC', [projectId]);
+  // get portfolio name
+  let portfolioName = '';
+  if (proj.rows[0].portfolio_id) {
+    const port = await query('SELECT name FROM portfolios WHERE id=$1', [proj.rows[0].portfolio_id]);
+    if (port.rows.length) portfolioName = port.rows[0].name;
+  }
+  return { project: { ...proj.rows[0], portfolio_name: portfolioName }, tasks: tasks.rows };
+}
+
+router.post('/projects/:id/archive', auth, async (req, res) => {
+  try {
+    const snap = await snapshotProject(req.params.id, req.user.id);
+    if (!snap) return res.status(404).json({ error: 'Project not found' });
+    await query(
+      `INSERT INTO archived_projects (owner_id, original_id, project_data, tasks_data)
+       VALUES ($1,$2,$3,$4)`,
+      [req.user.id, req.params.id, JSON.stringify(snap.project), JSON.stringify(snap.tasks)]
+    );
+    await query('DELETE FROM tasks WHERE project_id=$1', [req.params.id]);
+    await query('DELETE FROM projects WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/projects/:id/trash', auth, async (req, res) => {
+  try {
+    const snap = await snapshotProject(req.params.id, req.user.id);
+    if (!snap) return res.status(404).json({ error: 'Project not found' });
+    await query(
+      `INSERT INTO deleted_projects (owner_id, original_id, project_data, tasks_data)
+       VALUES ($1,$2,$3,$4)`,
+      [req.user.id, req.params.id, JSON.stringify(snap.project), JSON.stringify(snap.tasks)]
+    );
+    await query('DELETE FROM tasks WHERE project_id=$1', [req.params.id]);
+    await query('DELETE FROM projects WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Archived projects ──────────────────────────────────────────────
+router.get('/archived-projects', auth, async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT * FROM archived_projects WHERE owner_id=$1 ORDER BY archived_at DESC',
+      [req.user.id]
+    );
+    res.json({ archived: result.rows.map(r => ({
+      id: String(r.id), original_id: String(r.original_id),
+      project: r.project_data, tasks: r.tasks_data,
+      archived_at: r.archived_at
+    }))});
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/archived-projects/:id/restore', auth, async (req, res) => {
+  try {
+    const row = await query('SELECT * FROM archived_projects WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    if (!row.rows.length) return res.status(404).json({ error: 'Not found' });
+    const { project_data, tasks_data } = row.rows[0];
+    const p = project_data;
+    // Ensure portfolio still exists
+    let portId = p.portfolio_id;
+    if (portId) {
+      const portCheck = await query('SELECT id FROM portfolios WHERE id=$1 AND owner_id=$2', [portId, req.user.id]);
+      if (!portCheck.rows.length) portId = null;
+    }
+    if (!portId) {
+      const firstPort = await query('SELECT id FROM portfolios WHERE owner_id=$1 ORDER BY created_at ASC LIMIT 1', [req.user.id]);
+      if (firstPort.rows.length) portId = firstPort.rows[0].id;
+    }
+    if (!portId) return res.status(400).json({ error: 'No portfolio available to restore into' });
+    const newProj = await query(
+      `INSERT INTO projects (portfolio_id, owner_id, name, description, initiative, region, status, stage, color, due_date, owner_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [portId, req.user.id, p.name, p.description||'', p.initiative||'', p.region||'na',
+       p.status||'On Track', p.stage||0, p.color||'#4C8EE8', p.due_date||'', p.owner_name||'']
+    );
+    for (const t of (tasks_data || [])) {
+      await query(
+        `INSERT INTO tasks (project_id, name, status, assignee_name, priority, due_date, progress, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [newProj.rows[0].id, t.name, t.status||'Not Started', t.assignee_name||'',
+         t.priority||'Medium', t.due_date||'', t.progress||0, t.notes||'']
+      );
+    }
+    await query('DELETE FROM archived_projects WHERE id=$1', [req.params.id]);
+    res.json({ ok: true, project_id: String(newProj.rows[0].id) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/archived-projects/:id', auth, async (req, res) => {
+  try {
+    await query('DELETE FROM archived_projects WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Deleted projects (trash, 30-day hold) ─────────────────────────
+async function purgeExpiredDeleted(ownerId) {
+  await query(
+    `DELETE FROM deleted_projects WHERE owner_id=$1 AND deleted_at < NOW() - INTERVAL '30 days'`,
+    [ownerId]
+  );
+}
+
+router.get('/deleted-projects', auth, async (req, res) => {
+  try {
+    await purgeExpiredDeleted(req.user.id);
+    const result = await query(
+      'SELECT * FROM deleted_projects WHERE owner_id=$1 ORDER BY deleted_at DESC',
+      [req.user.id]
+    );
+    res.json({ deleted: result.rows.map(r => ({
+      id: String(r.id), original_id: String(r.original_id),
+      project: r.project_data, tasks: r.tasks_data,
+      deleted_at: r.deleted_at,
+      expires_at: new Date(new Date(r.deleted_at).getTime() + 30*24*60*60*1000).toISOString()
+    }))});
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/deleted-projects/:id/restore', auth, async (req, res) => {
+  try {
+    await purgeExpiredDeleted(req.user.id);
+    const row = await query('SELECT * FROM deleted_projects WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    if (!row.rows.length) return res.status(404).json({ error: 'Not found or already expired' });
+    const { project_data, tasks_data } = row.rows[0];
+    const p = project_data;
+    let portId = p.portfolio_id;
+    if (portId) {
+      const portCheck = await query('SELECT id FROM portfolios WHERE id=$1 AND owner_id=$2', [portId, req.user.id]);
+      if (!portCheck.rows.length) portId = null;
+    }
+    if (!portId) {
+      const firstPort = await query('SELECT id FROM portfolios WHERE owner_id=$1 ORDER BY created_at ASC LIMIT 1', [req.user.id]);
+      if (firstPort.rows.length) portId = firstPort.rows[0].id;
+    }
+    if (!portId) return res.status(400).json({ error: 'No portfolio available to restore into' });
+    const newProj = await query(
+      `INSERT INTO projects (portfolio_id, owner_id, name, description, initiative, region, status, stage, color, due_date, owner_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [portId, req.user.id, p.name, p.description||'', p.initiative||'', p.region||'na',
+       p.status||'On Track', p.stage||0, p.color||'#4C8EE8', p.due_date||'', p.owner_name||'']
+    );
+    for (const t of (tasks_data || [])) {
+      await query(
+        `INSERT INTO tasks (project_id, name, status, assignee_name, priority, due_date, progress, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [newProj.rows[0].id, t.name, t.status||'Not Started', t.assignee_name||'',
+         t.priority||'Medium', t.due_date||'', t.progress||0, t.notes||'']
+      );
+    }
+    await query('DELETE FROM deleted_projects WHERE id=$1', [req.params.id]);
+    res.json({ ok: true, project_id: String(newProj.rows[0].id) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/deleted-projects/:id', auth, async (req, res) => {
+  try {
+    await query('DELETE FROM deleted_projects WHERE id=$1 AND owner_id=$2', [req.params.id, req.user.id]);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ── Tasks ─────────────────────────────────────────────────────────
 router.post('/projects/:id/tasks', auth, async (req, res) => {
   const { name, status, assignee_name, priority, due_date, progress } = req.body;
@@ -316,6 +485,24 @@ function dbTaskToFE(t) {
 // ── Migrations ────────────────────────────────────────────────────
 query(`ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES portfolios(id) ON DELETE SET NULL`)
   .catch(err => console.error('portfolios parent_id migration:', err.message));
+
+query(`CREATE TABLE IF NOT EXISTS archived_projects (
+  id SERIAL PRIMARY KEY,
+  owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  original_id INTEGER,
+  project_data JSONB NOT NULL,
+  tasks_data JSONB DEFAULT '[]',
+  archived_at TIMESTAMPTZ DEFAULT NOW()
+)`).catch(err => console.error('archived_projects table init:', err.message));
+
+query(`CREATE TABLE IF NOT EXISTS deleted_projects (
+  id SERIAL PRIMARY KEY,
+  owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  original_id INTEGER,
+  project_data JSONB NOT NULL,
+  tasks_data JSONB DEFAULT '[]',
+  deleted_at TIMESTAMPTZ DEFAULT NOW()
+)`).catch(err => console.error('deleted_projects table init:', err.message));
 
 // ── Dashboards ────────────────────────────────────────────────────
 // Auto-create table on first load
